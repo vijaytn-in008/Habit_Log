@@ -79,15 +79,17 @@ async function saveLog(type, name, status, reason, notes, date, time) {
  * @param {string} time         — optional time
  * @param {string} place        — optional place
  * @param {string} behaviorType — "Good" or "Bad" (optional)
+ * @param {boolean} remind      — whether reminder notification is active
  */
-async function apiAddItem(type, name, time, place, behaviorType) {
+async function apiAddItem(type, name, time, place, behaviorType, remind) {
   return apiCall({
     action: 'addItem',
     type,
     name,
     time: time || '',
     place: place || '',
-    behaviorType: behaviorType || 'Good'
+    behaviorType: behaviorType || 'Good',
+    remind: remind ? 'true' : 'false'
   });
 }
 
@@ -101,6 +103,21 @@ async function apiDeleteItem(type, name) {
     action: 'deleteItem',
     type,
     name
+  });
+}
+
+/**
+ * Update the remind configuration for an item.
+ * @param {string} type — "Habit" or "Task"
+ * @param {string} name — item name
+ * @param {boolean} remind — true/false
+ */
+async function apiToggleReminder(type, name, remind) {
+  return apiCall({
+    action: 'toggleReminder',
+    type,
+    name,
+    remind: remind ? 'true' : 'false'
   });
 }
 
@@ -251,6 +268,31 @@ function openModal(item, type) {
   }
   if (timeInput) {
     timeInput.value = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }); // HH:MM
+  }
+
+  // Pre-fill and configure reminder toggle
+  const remindWrapper = document.getElementById('log-remind-wrapper');
+  const remindCheckbox = document.getElementById('log-remind-checkbox');
+  if (remindWrapper && remindCheckbox) {
+    if (item.time) {
+      remindWrapper.style.display = 'block';
+      remindCheckbox.checked = !!item.remind;
+      
+      // Temporarily detach old listener and attach new dynamic listener
+      remindCheckbox.onclick = async () => {
+        try {
+          await apiToggleReminder(type, name, remindCheckbox.checked);
+          showToast(`Reminder ${remindCheckbox.checked ? 'Enabled' : 'Disabled'}`);
+          if (remindCheckbox.checked) {
+            scheduleNotification(name, item.time);
+          }
+        } catch (err) {
+          console.error("Failed to toggle reminder status:", err);
+        }
+      };
+    } else {
+      remindWrapper.style.display = 'none';
+    }
   }
 
   // Reset status buttons
@@ -424,7 +466,17 @@ async function initHabitsPage() {
   try {
     const data = await fetchHabits();
     loading.classList.add('hidden');
-    renderList(data.data || data, 'Habit', 'list');
+    const items = data.data || data;
+    renderList(items, 'Habit', 'list');
+
+    // Schedule active notification reminders
+    if (items && Array.isArray(items)) {
+      items.forEach((item) => {
+        if (item.remind && item.time) {
+          scheduleNotification(item.name, item.time);
+        }
+      });
+    }
   } catch (err) {
     loading.innerHTML = '<p>Could not load habits.<br>Check your connection.</p>';
     console.error(err);
@@ -437,7 +489,17 @@ async function initTasksPage() {
   try {
     const data = await fetchTasks();
     loading.classList.add('hidden');
-    renderList(data.data || data, 'Task', 'list');
+    const items = data.data || data;
+    renderList(items, 'Task', 'list');
+
+    // Schedule active notification reminders
+    if (items && Array.isArray(items)) {
+      items.forEach((item) => {
+        if (item.remind && item.time) {
+          scheduleNotification(item.name, item.time);
+        }
+      });
+    }
   } catch (err) {
     loading.innerHTML = '<p>Could not load tasks.<br>Check your connection.</p>';
     console.error(err);
@@ -624,6 +686,10 @@ async function handleAddItemSave(type) {
   const typeSelect = document.getElementById('new-item-type');
   const behaviorType = (type === 'Habit' && typeSelect) ? typeSelect.value : 'Good';
 
+  // Retrieve remind checkbox state
+  const remindCheckbox = document.getElementById('new-item-remind');
+  const remind = remindCheckbox ? remindCheckbox.checked : false;
+
   if (!name) {
     showToast('Name is required');
     return;
@@ -633,11 +699,11 @@ async function handleAddItemSave(type) {
   saveBtn.textContent = 'Saving…';
 
   try {
-    await apiAddItem(type, name, time, place, behaviorType);
+    await apiAddItem(type, name, time, place, behaviorType, remind);
     showToast(`${type} created successfully`);
     closeAddItemModal();
-    // Schedule a reminder notification for this item if a time was provided
-    if (time) {
+    // Schedule a reminder notification for this item if remind is checked and a time was provided
+    if (remind && time) {
       scheduleNotification(name, time);
     }
     setTimeout(() => location.reload(), 800);
@@ -721,6 +787,36 @@ function scheduleNotification(title, timeString) {
   }, delayMs);
 }
 
+/**
+ * Generate a soft sweet electronic chime sound using Web Audio API.
+ * Avoids browser blockages and requires no external sound file downloads.
+ */
+function playChime() {
+  try {
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    
+    // Node 1: Crystal tone oscillator
+    const osc = audioCtx.createOscillator();
+    const gainNode = audioCtx.createGain();
+    
+    osc.type = 'sine';
+    // Sweet pure high frequency (E6 pitch)
+    osc.frequency.setValueAtTime(1318.51, audioCtx.currentTime); 
+    
+    // Soft volume decay curve
+    gainNode.gain.setValueAtTime(0.08, audioCtx.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 1.2);
+    
+    osc.connect(gainNode);
+    gainNode.connect(audioCtx.destination);
+    
+    osc.start();
+    osc.stop(audioCtx.currentTime + 1.2);
+  } catch (e) {
+    console.warn("Audio chime play blocked by user interaction requirements:", e);
+  }
+}
+
 /** Show local notification banner. */
 function sendLocalNotification(itemTitle) {
   const options = {
@@ -730,6 +826,9 @@ function sendLocalNotification(itemTitle) {
     tag: 'behavior-log-reminder',
     renotify: true
   };
+
+  // Play audio chime
+  playChime();
 
   if (navigator.serviceWorker && navigator.serviceWorker.controller) {
     navigator.serviceWorker.ready.then((registration) => {

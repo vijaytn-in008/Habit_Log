@@ -15,22 +15,21 @@ function initializeSheetsIfNeeded() {
     );
   }
   
-  // 1. Setup "Habits" sheet (columns: Name, Time, Place, BehaviorType)
+  // 1. Setup "Habits" sheet (columns: Name, Time, Place, BehaviorType, Remind)
   var habitsSheet = ss.getSheetByName("Habits");
   if (!habitsSheet) {
     habitsSheet = ss.insertSheet("Habits");
-    habitsSheet.appendRow(["Name", "Time", "Place", "BehaviorType"]);
+    habitsSheet.appendRow(["Name", "Time", "Place", "BehaviorType", "Remind"]);
     // Add default templates
-    habitsSheet.appendRow(["Meditation", "07:00 AM", "Living Room", "Good"]);
-    habitsSheet.appendRow(["Reading", "09:00 PM", "Bedroom", "Good"]);
-    habitsSheet.appendRow(["Scrolling Social Media", "10:00 PM", "Bedroom", "Bad"]);
+    habitsSheet.appendRow(["Meditation", "07:00 AM", "Living Room", "Good", "Yes"]);
+    habitsSheet.appendRow(["Reading", "09:00 PM", "Bedroom", "Good", "No"]);
+    habitsSheet.appendRow(["Scrolling Social Media", "10:00 PM", "Bedroom", "Bad", "No"]);
   } else {
     // Check if BehaviorType column exists (Column D)
     if (habitsSheet.getLastColumn() < 4) {
       habitsSheet.getRange(1, 4).setValue("BehaviorType");
       var lastRow = habitsSheet.getLastRow();
       if (lastRow > 1) {
-        // Default existing habits to "Good"
         var range = habitsSheet.getRange(2, 4, lastRow - 1, 1);
         var values = [];
         for (var i = 0; i < lastRow - 1; i++) {
@@ -39,16 +38,43 @@ function initializeSheetsIfNeeded() {
         range.setValues(values);
       }
     }
+    // Check if Remind column exists (Column E)
+    if (habitsSheet.getLastColumn() < 5) {
+      habitsSheet.getRange(1, 5).setValue("Remind");
+      var lastRow = habitsSheet.getLastRow();
+      if (lastRow > 1) {
+        var range = habitsSheet.getRange(2, 5, lastRow - 1, 1);
+        var values = [];
+        for (var i = 0; i < lastRow - 1; i++) {
+          values.push(["No"]);
+        }
+        range.setValues(values);
+      }
+    }
   }
 
-  // 2. Setup "Tasks" sheet
+  // 2. Setup "Tasks" sheet (columns: Name, Time, Place, Remind)
   var tasksSheet = ss.getSheetByName("Tasks");
   if (!tasksSheet) {
     tasksSheet = ss.insertSheet("Tasks");
-    tasksSheet.appendRow(["Name", "Time", "Place"]);
+    tasksSheet.appendRow(["Name", "Time", "Place", "Remind"]);
     // Add default templates
-    tasksSheet.appendRow(["Plan Day", "08:00 AM", "Desk"]);
-    tasksSheet.appendRow(["Check Emails", "05:00 PM", "Office"]);
+    tasksSheet.appendRow(["Plan Day", "08:00 AM", "Desk", "Yes"]);
+    tasksSheet.appendRow(["Check Emails", "05:00 PM", "Office", "No"]);
+  } else {
+    // Check if Remind column exists (Column D)
+    if (tasksSheet.getLastColumn() < 4) {
+      tasksSheet.getRange(1, 4).setValue("Remind");
+      var lastRow = tasksSheet.getLastRow();
+      if (lastRow > 1) {
+        var range = tasksSheet.getRange(2, 4, lastRow - 1, 1);
+        var values = [];
+        for (var i = 0; i < lastRow - 1; i++) {
+          values.push(["No"]);
+        }
+        range.setValues(values);
+      }
+    }
   }
 
   // 3. Setup "Logs" sheet
@@ -61,20 +87,21 @@ function initializeSheetsIfNeeded() {
 
 /**
  * Handle all GET requests.
- * Supported actions: getHabits, getTasks, getLogs, saveLog, addItem, deleteItem, ping
+ * Supported actions: getHabits, getTasks, getLogs, saveLog, addItem, deleteItem, toggleReminder, ping
  */
 function doGet(e) {
   try {
     initializeSheetsIfNeeded();
     var action = e.parameter.action;
 
-    if (action === 'ping')      return jsonResponse({ status: 'ok', message: 'Connected to spreadsheet: ' + SpreadsheetApp.getActiveSpreadsheet().getName() });
-    if (action === 'getHabits') return getItems('Habits');
-    if (action === 'getTasks')  return getItems('Tasks');
-    if (action === 'getLogs')   return getLogs();
-    if (action === 'saveLog')   return saveLog(e.parameter);
-    if (action === 'addItem')   return addItem(e.parameter);
-    if (action === 'deleteItem') return deleteItem(e.parameter);
+    if (action === 'ping')           return jsonResponse({ status: 'ok', message: 'Connected to spreadsheet: ' + SpreadsheetApp.getActiveSpreadsheet().getName() });
+    if (action === 'getHabits')      return getItems('Habits');
+    if (action === 'getTasks')       return getItems('Tasks');
+    if (action === 'getLogs')        return getLogs();
+    if (action === 'saveLog')        return saveLog(e.parameter);
+    if (action === 'addItem')        return addItem(e.parameter);
+    if (action === 'deleteItem')     return deleteItem(e.parameter);
+    if (action === 'toggleReminder') return toggleReminder(e.parameter);
 
     return jsonResponse({ error: 'Unknown action: ' + action });
   } catch (err) {
@@ -92,9 +119,10 @@ function doPost(e) {
     var payload = JSON.parse(e.postData.contents);
     var action  = payload.action;
 
-    if (action === 'saveLog') return saveLog(payload);
-    if (action === 'addItem') return addItem(payload);
-    if (action === 'deleteItem') return deleteItem(payload);
+    if (action === 'saveLog')        return saveLog(payload);
+    if (action === 'addItem')        return addItem(payload);
+    if (action === 'deleteItem')     return deleteItem(payload);
+    if (action === 'toggleReminder') return toggleReminder(payload);
 
     return jsonResponse({ error: 'Unknown action: ' + action });
   } catch (err) {
@@ -122,7 +150,8 @@ function getItems(sheetName) {
         name:          rows[i][0].toString().trim(),
         time:          rows[i][1] ? rows[i][1].toString().trim() : '',
         place:         rows[i][2] ? rows[i][2].toString().trim() : '',
-        behaviorType:  (sheetName === 'Habits' && rows[i][3]) ? rows[i][3].toString().trim() : 'Good'
+        behaviorType:  (sheetName === 'Habits' && rows[i][3]) ? rows[i][3].toString().trim() : 'Good',
+        remind:        (sheetName === 'Habits' ? (rows[i][4] === 'Yes') : (rows[i][3] === 'Yes'))
       });
     }
   }

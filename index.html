@@ -95,6 +95,11 @@
         <option value="Bad">Bad Habit (To Quit)</option>
       </select>
 
+      <label style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: var(--text-secondary); cursor: pointer; margin-bottom: 24px;">
+        <input type="checkbox" id="new-item-remind" checked style="width: 16px; height: 16px; accent-color: var(--accent);">
+        Enable Reminder Notification
+      </label>
+
       <button id="add-item-save-btn" class="save-btn">Create Habit</button>
     </div>
   </div>
@@ -122,6 +127,14 @@
           <p class="reason-label" style="margin-bottom: 6px;">Time</p>
           <input type="time" id="log-time" class="notes-field" style="min-height: 44px; margin-bottom: 0; padding: 8px 12px; font-size: 0.85rem;">
         </div>
+      </div>
+
+      <!-- Reminder Toggle -->
+      <div id="log-remind-wrapper" style="margin-bottom: 20px;">
+        <label style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: var(--text-secondary); cursor: pointer;">
+          <input type="checkbox" id="log-remind-checkbox" style="width: 16px; height: 16px; accent-color: var(--accent);">
+          Remind me at scheduled time
+        </label>
       </div>
 
       <!-- Status Selection -->
