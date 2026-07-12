@@ -15,14 +15,30 @@ function initializeSheetsIfNeeded() {
     );
   }
   
-  // 1. Setup "Habits" sheet
+  // 1. Setup "Habits" sheet (columns: Name, Time, Place, BehaviorType)
   var habitsSheet = ss.getSheetByName("Habits");
   if (!habitsSheet) {
     habitsSheet = ss.insertSheet("Habits");
-    habitsSheet.appendRow(["Name", "Time", "Place"]);
+    habitsSheet.appendRow(["Name", "Time", "Place", "BehaviorType"]);
     // Add default templates
-    habitsSheet.appendRow(["Meditation", "07:00 AM", "Living Room"]);
-    habitsSheet.appendRow(["Reading", "09:00 PM", "Bedroom"]);
+    habitsSheet.appendRow(["Meditation", "07:00 AM", "Living Room", "Good"]);
+    habitsSheet.appendRow(["Reading", "09:00 PM", "Bedroom", "Good"]);
+    habitsSheet.appendRow(["Scrolling Social Media", "10:00 PM", "Bedroom", "Bad"]);
+  } else {
+    // Check if BehaviorType column exists (Column D)
+    if (habitsSheet.getLastColumn() < 4) {
+      habitsSheet.getRange(1, 4).setValue("BehaviorType");
+      var lastRow = habitsSheet.getLastRow();
+      if (lastRow > 1) {
+        // Default existing habits to "Good"
+        var range = habitsSheet.getRange(2, 4, lastRow - 1, 1);
+        var values = [];
+        for (var i = 0; i < lastRow - 1; i++) {
+          values.push(["Good"]);
+        }
+        range.setValues(values);
+      }
+    }
   }
 
   // 2. Setup "Tasks" sheet
@@ -45,7 +61,7 @@ function initializeSheetsIfNeeded() {
 
 /**
  * Handle all GET requests.
- * Supported actions: getHabits, getTasks, getLogs, saveLog, addItem, ping
+ * Supported actions: getHabits, getTasks, getLogs, saveLog, addItem, deleteItem, ping
  */
 function doGet(e) {
   try {
@@ -58,6 +74,7 @@ function doGet(e) {
     if (action === 'getLogs')   return getLogs();
     if (action === 'saveLog')   return saveLog(e.parameter);
     if (action === 'addItem')   return addItem(e.parameter);
+    if (action === 'deleteItem') return deleteItem(e.parameter);
 
     return jsonResponse({ error: 'Unknown action: ' + action });
   } catch (err) {
@@ -77,6 +94,7 @@ function doPost(e) {
 
     if (action === 'saveLog') return saveLog(payload);
     if (action === 'addItem') return addItem(payload);
+    if (action === 'deleteItem') return deleteItem(payload);
 
     return jsonResponse({ error: 'Unknown action: ' + action });
   } catch (err) {
@@ -101,9 +119,10 @@ function getItems(sheetName) {
   for (var i = 1; i < rows.length; i++) {
     if (rows[i][0]) { // Only include rows with a name
       items.push({
-        name:  rows[i][0].toString().trim(),
-        time:  rows[i][1] ? rows[i][1].toString().trim() : '',
-        place: rows[i][2] ? rows[i][2].toString().trim() : ''
+        name:          rows[i][0].toString().trim(),
+        time:          rows[i][1] ? rows[i][1].toString().trim() : '',
+        place:         rows[i][2] ? rows[i][2].toString().trim() : '',
+        behaviorType:  (sheetName === 'Habits' && rows[i][3]) ? rows[i][3].toString().trim() : 'Good'
       });
     }
   }
@@ -190,10 +209,40 @@ function jsonResponse(data) {
 function addItem(params) {
   var sheetName = params.type === 'Habit' ? 'Habits' : 'Tasks';
   var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sheetName);
-  sheet.appendRow([
-    params.name  || '',
-    params.time  || '',
-    params.place || ''
-  ]);
+  if (sheetName === 'Habits') {
+    sheet.appendRow([
+      params.name  || '',
+      params.time  || '',
+      params.place || '',
+      params.behaviorType || 'Good'
+    ]);
+  } else {
+    sheet.appendRow([
+      params.name  || '',
+      params.time  || '',
+      params.place || ''
+    ]);
+  }
   return jsonResponse({ status: 'ok', message: 'Item added' });
+}
+
+/**
+ * Find and delete a habit or task row by name.
+ */
+function deleteItem(params) {
+  var sheetName = params.type === 'Habit' ? 'Habits' : 'Tasks';
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sheetName);
+  var rows = sheet.getDataRange().getValues();
+  var targetName = (params.name || '').toString().trim().toLowerCase();
+
+  // Search rows (skipping header row 0)
+  for (var i = 1; i < rows.length; i++) {
+    var name = (rows[i][0] || '').toString().trim().toLowerCase();
+    if (name === targetName) {
+      sheet.deleteRow(i + 1); // deleteRow takes 1-indexed row number
+      return jsonResponse({ status: 'ok', message: 'Item deleted' });
+    }
+  }
+
+  return jsonResponse({ error: 'Item not found in sheet: ' + params.name });
 }

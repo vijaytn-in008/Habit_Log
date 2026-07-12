@@ -56,13 +56,14 @@ async function fetchLogs() {
  * @param {string} status — "Done", "Failed", or "Skipped"
  * @param {string} reason — failure/skip reason (optional)
  * @param {string} notes  — free-text notes (optional)
+ * @param {string} date   — custom date override
+ * @param {string} time   — custom time override
  */
-async function saveLog(type, name, status, reason, notes) {
-  const now = new Date();
+async function saveLog(type, name, status, reason, notes, date, time) {
   return apiCall({
     action: 'saveLog',
-    date: now.toLocaleDateString('en-CA'),                              // YYYY-MM-DD
-    time: now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }), // HH:MM
+    date: date || new Date().toLocaleDateString('en-CA'),
+    time: time || new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
     type,
     name,
     status,
@@ -73,18 +74,33 @@ async function saveLog(type, name, status, reason, notes) {
 
 /**
  * Save a new custom item (Habit or Task).
- * @param {string} type  — "Habit" or "Task"
- * @param {string} name  — item name
- * @param {string} time  — optional time
- * @param {string} place — optional place
+ * @param {string} type         — "Habit" or "Task"
+ * @param {string} name         — item name
+ * @param {string} time         — optional time
+ * @param {string} place        — optional place
+ * @param {string} behaviorType — "Good" or "Bad" (optional)
  */
-async function apiAddItem(type, name, time, place) {
+async function apiAddItem(type, name, time, place, behaviorType) {
   return apiCall({
     action: 'addItem',
     type,
     name,
     time: time || '',
-    place: place || ''
+    place: place || '',
+    behaviorType: behaviorType || 'Good'
+  });
+}
+
+/**
+ * Delete a custom item from the spreadsheet.
+ * @param {string} type — "Habit" or "Task"
+ * @param {string} name — name of the item to delete
+ */
+async function apiDeleteItem(type, name) {
+  return apiCall({
+    action: 'deleteItem',
+    type,
+    name
   });
 }
 
@@ -130,7 +146,7 @@ function updateThemeIcon() {
 
 /**
  * Render an array of items as clickable cards.
- * @param {Array}  items       — [{name, time?, place?}, ...]
+ * @param {Array}  items       — [{name, time?, place?, behaviorType?}, ...]
  * @param {string} type        — "Habit" or "Task"
  * @param {string} containerId — ID of the target container
  */
@@ -140,7 +156,7 @@ function renderList(items, type, containerId) {
   container.innerHTML = '';
 
   if (!items || items.length === 0) {
-    container.innerHTML = '<div class="empty-state">No items yet. Add them in Google Sheets.</div>';
+    container.innerHTML = '<div class="empty-state">No items yet. Add them in Settings or click + Add.</div>';
     return;
   }
 
@@ -149,10 +165,30 @@ function renderList(items, type, containerId) {
     card.className = 'card';
     card.style.animationDelay = `${i * 0.05}s`;
 
+    const titleRow = document.createElement('div');
+    titleRow.style.display = 'flex';
+    titleRow.style.alignItems = 'center';
+    titleRow.style.justifyContent = 'space-between';
+
     const name = document.createElement('span');
     name.className = 'card-name';
     name.textContent = item.name;
-    card.appendChild(name);
+    titleRow.appendChild(name);
+
+    // Bad Habit Badge
+    if (type === 'Habit' && item.behaviorType === 'Bad') {
+      const badge = document.createElement('span');
+      badge.textContent = 'To Quit';
+      badge.style.fontSize = '0.68rem';
+      badge.style.fontWeight = '700';
+      badge.style.background = 'rgba(255, 69, 58, 0.15)';
+      badge.style.color = '#ff453a';
+      badge.style.padding = '3px 8px';
+      badge.style.borderRadius = '20px';
+      badge.style.marginLeft = '8px';
+      titleRow.appendChild(badge);
+    }
+    card.appendChild(titleRow);
 
     // Optional meta (time, place)
     const parts = [];
@@ -165,7 +201,7 @@ function renderList(items, type, containerId) {
       card.appendChild(meta);
     }
 
-    card.addEventListener('click', () => openModal(item.name, type));
+    card.addEventListener('click', () => openModal(item, type));
     container.appendChild(card);
   });
 }
@@ -173,14 +209,49 @@ function renderList(items, type, containerId) {
 // ============================================================
 // Modal
 // ============================================================
-let modalState = { name: '', type: '', status: '', reason: '' };
+let modalState = { name: '', type: '', status: '', reason: '', behaviorType: 'Good' };
 
 /** Open the log modal for a specific habit/task. */
-function openModal(name, type) {
-  modalState = { name, type, status: '', reason: '' };
+function openModal(item, type) {
+  const name = item.name;
+  const behaviorType = item.behaviorType || 'Good';
+  modalState = { name, type, status: '', reason: '', behaviorType };
 
   document.getElementById('modal-title').textContent = name;
   document.getElementById('notes').value = '';
+
+  // Setup Badge & Button Labels based on Habit Type
+  const badge = document.getElementById('modal-badge');
+  const textDone = document.getElementById('status-text-done');
+  const textFailed = document.getElementById('status-text-failed');
+
+  if (type === 'Task') {
+    badge.textContent = 'Task';
+    badge.style.color = 'var(--accent)';
+    textDone.textContent = 'Done';
+    textFailed.textContent = 'Failed';
+  } else if (behaviorType === 'Bad') {
+    badge.textContent = 'Bad Habit (To Quit)';
+    badge.style.color = 'var(--danger)';
+    textDone.textContent = 'Resisted (Success)';
+    textFailed.textContent = 'Indulged (Failure)';
+  } else {
+    badge.textContent = 'Good Habit (To Build)';
+    badge.style.color = 'var(--success)';
+    textDone.textContent = 'Done';
+    textFailed.textContent = 'Failed';
+  }
+
+  // Pre-fill Date & Time inputs with local current date & time
+  const now = new Date();
+  const dateInput = document.getElementById('log-date');
+  const timeInput = document.getElementById('log-time');
+  if (dateInput) {
+    dateInput.value = now.toLocaleDateString('en-CA'); // YYYY-MM-DD
+  }
+  if (timeInput) {
+    timeInput.value = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }); // HH:MM
+  }
 
   // Reset status buttons
   document.querySelectorAll('.status-btn').forEach((b) => {
@@ -226,12 +297,14 @@ function updateSaveButton() {
 async function handleSave() {
   const btn = document.getElementById('save-btn');
   const notes = document.getElementById('notes').value.trim();
+  const dateVal = document.getElementById('log-date').value;
+  const timeVal = document.getElementById('log-time').value;
 
   btn.disabled = true;
   btn.textContent = 'Saving…';
 
   try {
-    await saveLog(modalState.type, modalState.name, modalState.status, modalState.reason, notes);
+    await saveLog(modalState.type, modalState.name, modalState.status, modalState.reason, notes, dateVal, timeVal);
     btn.textContent = '✓ Saved';
     btn.classList.add('saved');
     showToast(`${modalState.name} logged as ${modalState.status}`);
@@ -240,6 +313,28 @@ async function handleSave() {
     btn.textContent = 'Error — Tap to Retry';
     btn.disabled = false;
     console.error('Save failed:', err);
+  }
+}
+
+/** Handle the item delete button click. */
+async function handleDeleteItem() {
+  if (!confirm(`Are you sure you want to delete "${modalState.name}"? This removes it permanently.`)) {
+    return;
+  }
+
+  const btn = document.getElementById('delete-item-btn');
+  btn.disabled = true;
+  btn.textContent = 'Deleting…';
+
+  try {
+    await apiDeleteItem(modalState.type, modalState.name);
+    showToast(`${modalState.name} deleted`);
+    closeModal();
+    setTimeout(() => location.reload(), 600);
+  } catch (err) {
+    btn.disabled = false;
+    btn.textContent = 'Delete';
+    console.error('Delete failed:', err);
   }
 }
 
@@ -295,6 +390,10 @@ function initModal() {
 
   // Save button
   document.getElementById('save-btn').addEventListener('click', handleSave);
+
+  // Delete button
+  const delBtn = document.getElementById('delete-item-btn');
+  if (delBtn) delBtn.addEventListener('click', handleDeleteItem);
 }
 
 // ============================================================
@@ -521,6 +620,10 @@ async function handleAddItemSave(type) {
   const time = timeInput.value.trim();
   const place = placeInput.value.trim();
 
+  // Retrieve behaviorType from select dropdown if on Habits page
+  const typeSelect = document.getElementById('new-item-type');
+  const behaviorType = (type === 'Habit' && typeSelect) ? typeSelect.value : 'Good';
+
   if (!name) {
     showToast('Name is required');
     return;
@@ -530,7 +633,7 @@ async function handleAddItemSave(type) {
   saveBtn.textContent = 'Saving…';
 
   try {
-    await apiAddItem(type, name, time, place);
+    await apiAddItem(type, name, time, place, behaviorType);
     showToast(`${type} created successfully`);
     closeAddItemModal();
     // Schedule a reminder notification for this item if a time was provided

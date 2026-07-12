@@ -89,6 +89,12 @@
       <p class="reason-label">Place (optional)</p>
       <input type="text" id="new-item-place" class="notes-field" style="min-height: 48px; margin-bottom: 24px;" placeholder="e.g. Living Room, Bedroom">
 
+      <p class="reason-label">Habit Type</p>
+      <select id="new-item-type" class="notes-field" style="min-height: 48px; margin-bottom: 24px; background: var(--surface); color: var(--text);">
+        <option value="Good">Good Habit (To Build)</option>
+        <option value="Bad">Bad Habit (To Quit)</option>
+      </select>
+
       <button id="add-item-save-btn" class="save-btn">Create Habit</button>
     </div>
   </div>
@@ -99,23 +105,38 @@
       <div class="modal-handle"></div>
 
       <div class="modal-header">
-        <h2 id="modal-title">Habit Name</h2>
+        <div>
+          <h2 id="modal-title">Habit Name</h2>
+          <span id="modal-badge" class="card-meta" style="color: var(--accent); font-weight: 600; text-transform: uppercase; font-size: 0.72rem; margin-top: 4px; display: inline-block;"></span>
+        </div>
         <button id="modal-close" class="modal-close" aria-label="Close">✕</button>
+      </div>
+
+      <!-- Custom Date & Time Fields (Back-dating) -->
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px;">
+        <div>
+          <p class="reason-label" style="margin-bottom: 6px;">Date</p>
+          <input type="date" id="log-date" class="notes-field" style="min-height: 44px; margin-bottom: 0; padding: 8px 12px; font-size: 0.85rem;">
+        </div>
+        <div>
+          <p class="reason-label" style="margin-bottom: 6px;">Time</p>
+          <input type="time" id="log-time" class="notes-field" style="min-height: 44px; margin-bottom: 0; padding: 8px 12px; font-size: 0.85rem;">
+        </div>
       </div>
 
       <!-- Status Selection -->
       <div class="status-group">
-        <button class="status-btn" data-status="Done">
+        <button class="status-btn" data-status="Done" id="status-btn-done">
           <span class="status-icon">✓</span>
-          Done
+          <span id="status-text-done">Done</span>
         </button>
-        <button class="status-btn" data-status="Failed">
+        <button class="status-btn" data-status="Failed" id="status-btn-failed">
           <span class="status-icon">✗</span>
-          Failed
+          <span id="status-text-failed">Failed</span>
         </button>
-        <button class="status-btn" data-status="Skipped">
+        <button class="status-btn" data-status="Skipped" id="status-btn-skipped">
           <span class="status-icon">○</span>
-          Skipped
+          <span id="status-text-skipped">Skipped</span>
         </button>
       </div>
 
@@ -138,7 +159,8 @@
       <textarea id="notes" class="notes-field" placeholder="Notes (optional)" rows="3"></textarea>
 
       <!-- Save -->
-      <button id="save-btn" class="save-btn" disabled>Save Log</button>
+      <button id="save-btn" class="save-btn" style="margin-bottom: 12px;">Save Log</button>
+      <button id="delete-item-btn" class="save-btn" style="background: var(--danger); font-size: 0.9rem; padding: 12px;">Delete Habit</button>
     </div>
   </div>
 
