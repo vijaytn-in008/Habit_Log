@@ -392,16 +392,49 @@ function saveSettings() {
   }
 }
 
+/** Clear all data, unregister service workers, delete caches, and reload. */
+async function resetAppAndClearCache() {
+  if (!confirm("Are you sure you want to reset the app? This clears the saved Apps Script URL and deletes all local file caches to fetch the latest version.")) {
+    return;
+  }
+
+  // 1. Clear local storage
+  localStorage.clear();
+
+  // 2. Unregister service workers
+  if ('serviceWorker' in navigator) {
+    const registrations = await navigator.serviceWorker.getRegistrations();
+    for (let registration of registrations) {
+      await registration.unregister();
+    }
+  }
+
+  // 3. Clear PWA caches
+  if ('caches' in window) {
+    const keys = await caches.keys();
+    for (let key of keys) {
+      await caches.delete(key);
+    }
+  }
+
+  showToast('App reset complete. Reloading...');
+  setTimeout(() => {
+    window.location.reload(true);
+  }, 1000);
+}
+
 /** Initialize settings modal events. */
 function initSettingsModal() {
   const btn = document.getElementById('settings-btn');
   const close = document.getElementById('settings-close');
   const save = document.getElementById('settings-save-btn');
+  const reset = document.getElementById('settings-reset-btn');
   const overlay = document.getElementById('settings-overlay');
 
   if (btn) btn.addEventListener('click', openSettingsModal);
   if (close) close.addEventListener('click', closeSettingsModal);
   if (save) save.addEventListener('click', saveSettings);
+  if (reset) reset.addEventListener('click', resetAppAndClearCache);
   if (overlay) {
     overlay.addEventListener('click', (e) => {
       if (e.target === overlay) closeSettingsModal();
