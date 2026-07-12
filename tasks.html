@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Tasks — Behavior Log</title>
+  <meta name="description" content="Log your daily tasks and discover behavioral patterns.">
+
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#000000">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="icon" href="icon-512.png">
+  <link rel="apple-touch-icon" href="icon-512.png">
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- ====== Header ====== -->
+  <header class="header container">
+    <h1>Tasks</h1>
+    <div style="display: flex; gap: 8px; align-items: center;">
+      <button id="install-btn" class="theme-toggle hidden" aria-label="Install App" title="Install App">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+        </svg>
+      </button>
+      <button id="settings-btn" class="theme-toggle" aria-label="API Settings" title="API Settings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>
+      </button>
+      <button id="theme-toggle" class="theme-toggle" aria-label="Toggle theme"></button>
+    </div>
+  </header>
+
+  <!-- ====== Settings Modal ====== -->
+  <div id="settings-overlay" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-handle"></div>
+      <div class="modal-header">
+        <h2>Backend Settings</h2>
+        <button id="settings-close" class="modal-close" aria-label="Close">✕</button>
+      </div>
+      <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 16px;">
+        Paste your Google Apps Script Web App URL below. This is stored securely in your local browser only.
+      </p>
+      <input type="password" id="api-url-input" class="notes-field" style="min-height: 48px; margin-bottom: 20px;" placeholder="https://script.google.com/macros/s/.../exec">
+      <button id="settings-save-btn" class="save-btn">Save Settings</button>
+    </div>
+  </div>
+
+  <!-- ====== Content ====== -->
+  <main class="container">
+    <div id="loading" class="loading">
+      <div class="loading-spinner"></div>
+      <p>Loading tasks…</p>
+    </div>
+    <div id="list" class="card-list"></div>
+  </main>
+
+  <!-- ====== Log Modal ====== -->
+  <div id="modal-overlay" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-handle"></div>
+
+      <div class="modal-header">
+        <h2 id="modal-title">Task Name</h2>
+        <button id="modal-close" class="modal-close" aria-label="Close">✕</button>
+      </div>
+
+      <!-- Status Selection -->
+      <div class="status-group">
+        <button class="status-btn" data-status="Done">
+          <span class="status-icon">✓</span>
+          Done
+        </button>
+        <button class="status-btn" data-status="Failed">
+          <span class="status-icon">✗</span>
+          Failed
+        </button>
+        <button class="status-btn" data-status="Skipped">
+          <span class="status-icon">○</span>
+          Skipped
+        </button>
+      </div>
+
+      <!-- Reason Selection (shown for Failed / Skipped) -->
+      <div id="reason-section" class="reason-section">
+        <p class="reason-label">What happened?</p>
+        <div class="reason-chips">
+          <button class="chip" data-reason="Phone">📱 Phone</button>
+          <button class="chip" data-reason="Social Media">📲 Social Media</button>
+          <button class="chip" data-reason="Too Tired">😴 Too Tired</button>
+          <button class="chip" data-reason="No Motivation">😐 No Motivation</button>
+          <button class="chip" data-reason="Forgot">🤔 Forgot</button>
+          <button class="chip" data-reason="Unexpected Work">💼 Unexpected Work</button>
+          <button class="chip" data-reason="No Time">⏰ No Time</button>
+          <button class="chip" data-reason="Other">💬 Other</button>
+        </div>
+      </div>
+
+      <!-- Notes -->
+      <textarea id="notes" class="notes-field" placeholder="Notes (optional)" rows="3"></textarea>
+
+      <!-- Save -->
+      <button id="save-btn" class="save-btn" disabled>Save Log</button>
+    </div>
+  </div>
+
+  <!-- ====== Bottom Navigation ====== -->
+  <nav class="bottom-nav">
+    <div class="nav-inner">
+      <a href="index.html" class="nav-item" aria-label="Habits">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/>
+          <path d="m9 12 2 2 4-4"/>
+        </svg>
+        <span>Habits</span>
+      </a>
+      <a href="tasks.html" class="nav-item active" aria-label="Tasks">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="4" y="3" width="16" height="18" rx="2"/>
+          <path d="M10 7h4M8 12h8M8 16h5"/>
+        </svg>
+        <span>Tasks</span>
+      </a>
+      <a href="reflection.html" class="nav-item" aria-label="Reflect">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="5"/>
+          <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+        </svg>
+        <span>Reflect</span>
+      </a>
+    </div>
+  </nav>
+
+  <!-- ====== Scripts ====== -->
+  <script src="script.js"></script>
+  <script>
+    // Initialize the Tasks page
+    document.addEventListener('DOMContentLoaded', initTasksPage);
+  </script>
+</body>
+</html>
