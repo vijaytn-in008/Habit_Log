@@ -9,6 +9,11 @@
  */
 function initializeSheetsIfNeeded() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
+  if (!ss) {
+    throw new Error(
+      "Spreadsheet not found. Make sure this Apps Script was created from INSIDE your Google Sheet via 'Extensions' -> 'Apps Script' (container-bound script). If you created it directly in Google Drive, it will not work."
+    );
+  }
   
   // 1. Setup "Habits" sheet
   var habitsSheet = ss.getSheetByName("Habits");
@@ -40,19 +45,24 @@ function initializeSheetsIfNeeded() {
 
 /**
  * Handle all GET requests.
- * Supported actions: getHabits, getTasks, getLogs, saveLog
+ * Supported actions: getHabits, getTasks, getLogs, saveLog, addItem, ping
  */
 function doGet(e) {
-  initializeSheetsIfNeeded();
-  var action = e.parameter.action;
+  try {
+    initializeSheetsIfNeeded();
+    var action = e.parameter.action;
 
-  if (action === 'getHabits') return getItems('Habits');
-  if (action === 'getTasks')  return getItems('Tasks');
-  if (action === 'getLogs')   return getLogs();
-  if (action === 'saveLog')   return saveLog(e.parameter);
-  if (action === 'addItem')   return addItem(e.parameter);
+    if (action === 'ping')      return jsonResponse({ status: 'ok', message: 'Connected to spreadsheet: ' + SpreadsheetApp.getActiveSpreadsheet().getName() });
+    if (action === 'getHabits') return getItems('Habits');
+    if (action === 'getTasks')  return getItems('Tasks');
+    if (action === 'getLogs')   return getLogs();
+    if (action === 'saveLog')   return saveLog(e.parameter);
+    if (action === 'addItem')   return addItem(e.parameter);
 
-  return jsonResponse({ error: 'Unknown action: ' + action });
+    return jsonResponse({ error: 'Unknown action: ' + action });
+  } catch (err) {
+    return jsonResponse({ error: err.message || err.toString() });
+  }
 }
 
 /**
@@ -60,14 +70,18 @@ function doGet(e) {
  * Parses the JSON body and delegates to the same handlers.
  */
 function doPost(e) {
-  initializeSheetsIfNeeded();
-  var payload = JSON.parse(e.postData.contents);
-  var action  = payload.action;
+  try {
+    initializeSheetsIfNeeded();
+    var payload = JSON.parse(e.postData.contents);
+    var action  = payload.action;
 
-  if (action === 'saveLog') return saveLog(payload);
-  if (action === 'addItem') return addItem(payload);
+    if (action === 'saveLog') return saveLog(payload);
+    if (action === 'addItem') return addItem(payload);
 
-  return jsonResponse({ error: 'Unknown action: ' + action });
+    return jsonResponse({ error: 'Unknown action: ' + action });
+  } catch (err) {
+    return jsonResponse({ error: err.message || err.toString() });
+  }
 }
 
 // ============================================================

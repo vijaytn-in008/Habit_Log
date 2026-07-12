@@ -18,11 +18,6 @@ let API_URL = localStorage.getItem('blog-api-url') || '';
 // with Google Apps Script.
 // ============================================================
 
-/**
- * Generic API call. Encodes all params as query strings.
- * @param {Object} params — key-value pairs sent to Apps Script
- * @returns {Promise<Object>} parsed JSON response
- */
 async function apiCall(params) {
   if (!API_URL) {
     showToast('Please set your Apps Script URL in Settings first.');
@@ -31,7 +26,12 @@ async function apiCall(params) {
   }
   const query = new URLSearchParams(params).toString();
   const response = await fetch(`${API_URL}?${query}`);
-  return response.json();
+  const data = await response.json();
+  if (data && data.error) {
+    showToast(`API Error: ${data.error}`);
+    throw new Error(data.error);
+  }
+  return data;
 }
 
 /** Fetch all habits from the Habits sheet. */
