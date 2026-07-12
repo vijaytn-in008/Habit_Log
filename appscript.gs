@@ -50,6 +50,7 @@ function doGet(e) {
   if (action === 'getTasks')  return getItems('Tasks');
   if (action === 'getLogs')   return getLogs();
   if (action === 'saveLog')   return saveLog(e.parameter);
+  if (action === 'addItem')   return addItem(e.parameter);
 
   return jsonResponse({ error: 'Unknown action: ' + action });
 }
@@ -64,6 +65,7 @@ function doPost(e) {
   var action  = payload.action;
 
   if (action === 'saveLog') return saveLog(payload);
+  if (action === 'addItem') return addItem(payload);
 
   return jsonResponse({ error: 'Unknown action: ' + action });
 }
@@ -166,4 +168,18 @@ function jsonResponse(data) {
   return ContentService
     .createTextOutput(JSON.stringify(data))
     .setMimeType(ContentService.MimeType.JSON);
+}
+
+/**
+ * Add a new item to Habits or Tasks sheet.
+ */
+function addItem(params) {
+  var sheetName = params.type === 'Habit' ? 'Habits' : 'Tasks';
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sheetName);
+  sheet.appendRow([
+    params.name  || '',
+    params.time  || '',
+    params.place || ''
+  ]);
+  return jsonResponse({ status: 'ok', message: 'Item added' });
 }

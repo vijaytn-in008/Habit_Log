@@ -60,8 +60,37 @@
       <div class="loading-spinner"></div>
       <p>Loading habits…</p>
     </div>
+    
+    <div style="display: flex; justify-content: flex-end; padding: 10px 0;">
+      <button id="add-item-trigger-btn" class="refresh-btn" style="border-radius: 12px; padding: 10px 16px; font-weight: 600;">
+        + Add Habit
+      </button>
+    </div>
+
     <div id="list" class="card-list"></div>
   </main>
+
+  <!-- ====== Add Item Modal ====== -->
+  <div id="add-item-overlay" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-handle"></div>
+      <div class="modal-header">
+        <h2 id="add-modal-title">Create Habit</h2>
+        <button id="add-modal-close" class="modal-close" aria-label="Close">✕</button>
+      </div>
+      
+      <p class="reason-label">Name</p>
+      <input type="text" id="new-item-name" class="notes-field" style="min-height: 48px; margin-bottom: 16px;" placeholder="e.g. Read Book, Workout">
+      
+      <p class="reason-label">Scheduled Time (optional)</p>
+      <input type="text" id="new-item-time" class="notes-field" style="min-height: 48px; margin-bottom: 16px;" placeholder="e.g. 07:00 AM, Evening">
+      
+      <p class="reason-label">Place (optional)</p>
+      <input type="text" id="new-item-place" class="notes-field" style="min-height: 48px; margin-bottom: 24px;" placeholder="e.g. Living Room, Bedroom">
+
+      <button id="add-item-save-btn" class="save-btn">Create Habit</button>
+    </div>
+  </div>
 
   <!-- ====== Log Modal ====== -->
   <div id="modal-overlay" class="modal-overlay">

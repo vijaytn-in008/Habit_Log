@@ -71,6 +71,23 @@ async function saveLog(type, name, status, reason, notes) {
   });
 }
 
+/**
+ * Save a new custom item (Habit or Task).
+ * @param {string} type  — "Habit" or "Task"
+ * @param {string} name  — item name
+ * @param {string} time  — optional time
+ * @param {string} place — optional place
+ */
+async function apiAddItem(type, name, time, place) {
+  return apiCall({
+    action: 'addItem',
+    type,
+    name,
+    time: time || '',
+    place: place || ''
+  });
+}
+
 // ============================================================
 // Theme
 // ============================================================
@@ -436,12 +453,171 @@ window.addEventListener('appinstalled', (evt) => {
 });
 
 // ============================================================
+// Add Item Modal & Logic
+// ============================================================
+
+/** Open the add item modal. */
+function openAddItemModal() {
+  const overlay = document.getElementById('add-item-overlay');
+  if (overlay) {
+    document.getElementById('new-item-name').value = '';
+    document.getElementById('new-item-time').value = '';
+    document.getElementById('new-item-place').value = '';
+    overlay.classList.add('active');
+    document.body.style.overflow = 'hidden';
+  }
+}
+
+/** Close the add item modal. */
+function closeAddItemModal() {
+  const overlay = document.getElementById('add-item-overlay');
+  if (overlay) {
+    overlay.classList.remove('active');
+    document.body.style.overflow = '';
+  }
+}
+
+/** Submit new habit/task item to spreadsheet. */
+async function handleAddItemSave(type) {
+  const nameInput = document.getElementById('new-item-name');
+  const timeInput = document.getElementById('new-item-time');
+  const placeInput = document.getElementById('new-item-place');
+  const saveBtn = document.getElementById('add-item-save-btn');
+
+  const name = nameInput.value.trim();
+  const time = timeInput.value.trim();
+  const place = placeInput.value.trim();
+
+  if (!name) {
+    showToast('Name is required');
+    return;
+  }
+
+  saveBtn.disabled = true;
+  saveBtn.textContent = 'Saving…';
+
+  try {
+    await apiAddItem(type, name, time, place);
+    showToast(`${type} created successfully`);
+    closeAddItemModal();
+    // Schedule a reminder notification for this item if a time was provided
+    if (time) {
+      scheduleNotification(name, time);
+    }
+    setTimeout(() => location.reload(), 800);
+  } catch (err) {
+    saveBtn.disabled = false;
+    saveBtn.textContent = `Create ${type}`;
+    console.error(err);
+  }
+}
+
+/** Set up add item UI interactions. */
+function initAddItemModal(type) {
+  const trigger = document.getElementById('add-item-trigger-btn');
+  const close = document.getElementById('add-modal-close');
+  const save = document.getElementById('add-item-save-btn');
+  const overlay = document.getElementById('add-item-overlay');
+
+  if (trigger) trigger.addEventListener('click', () => {
+    // Request permission for local notifications when user adds an item
+    requestNotificationPermission();
+    openAddItemModal();
+  });
+  if (close) close.addEventListener('click', closeAddItemModal);
+  if (overlay) {
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) closeAddItemModal();
+    });
+  }
+  if (save) save.addEventListener('click', () => handleAddItemSave(type));
+}
+
+// ============================================================
+// Notifications & Reminders
+// ============================================================
+
+/** Request browser notification permission. */
+async function requestNotificationPermission() {
+  if (!('Notification' in window)) return;
+  if (Notification.permission === 'default') {
+    await Notification.requestPermission();
+  }
+}
+
+/**
+ * Schedule a client-side reminder using service worker.
+ * Checks for standard time strings (e.g. HH:MM AM/PM or HH:MM)
+ */
+function scheduleNotification(title, timeString) {
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+  
+  // Parse time input (e.g. "07:00 AM", "19:30", "7:00 PM")
+  const match = timeString.match(/(\d+):(\d+)\s*(AM|PM)?/i);
+  if (!match) return; // Ignore unstructured text time inputs
+
+  let hours = parseInt(match[1]);
+  const minutes = parseInt(match[2]);
+  const ampm = match[3];
+
+  if (ampm) {
+    if (ampm.toUpperCase() === 'PM' && hours < 12) hours += 12;
+    if (ampm.toUpperCase() === 'AM' && hours === 12) hours = 0;
+  }
+
+  const now = new Date();
+  const reminderTime = new Date();
+  reminderTime.setHours(hours, minutes, 0, 0);
+
+  // If time has already passed today, schedule for tomorrow
+  if (reminderTime <= now) {
+    reminderTime.setDate(reminderTime.getDate() + 1);
+  }
+
+  const delayMs = reminderTime.getTime() - now.getTime();
+  
+  console.log(`Scheduling reminder for "${title}" at ${reminderTime} (in ${Math.round(delayMs / 1000)} seconds)`);
+
+  setTimeout(() => {
+    sendLocalNotification(title);
+    // Re-schedule for next day
+    scheduleNotification(title, timeString);
+  }, delayMs);
+}
+
+/** Show local notification banner. */
+function sendLocalNotification(itemTitle) {
+  const options = {
+    body: `Time to log your status for: ${itemTitle}`,
+    icon: 'icon-192.png',
+    badge: 'icon-192.png',
+    tag: 'behavior-log-reminder',
+    renotify: true
+  };
+
+  if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+    navigator.serviceWorker.ready.then((registration) => {
+      registration.showNotification('Behavior Log Reminder', options);
+    });
+  } else {
+    new Notification('Behavior Log Reminder', options);
+  }
+}
+
+// ============================================================
 // Common Init (runs on every page)
 // ============================================================
 document.addEventListener('DOMContentLoaded', () => {
   initTheme();
   initModal();
   initSettingsModal();
+
+  // Determine current page item type (Habit or Task)
+  const isTasksPage = window.location.pathname.includes('tasks.html');
+  initAddItemModal(isTasksPage ? 'Task' : 'Habit');
+
+  // Request notification permissions implicitly on page load
+  requestNotificationPermission();
 
   const themeBtn = document.getElementById('theme-toggle');
   if (themeBtn) themeBtn.addEventListener('click', toggleTheme);
