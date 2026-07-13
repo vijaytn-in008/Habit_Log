@@ -1,7 +1,10 @@
 /* ============================================================
    Behavior Log — Main Script
-   Handles API calls, modal, theme, list rendering, and
-   service worker registration.
+   Offline-first architecture:
+   1. IndexedDB is the primary data source
+   2. Sync queue stores mutations for background sync
+   3. Google Sheets is the cloud backup (synced when online)
+   4. Notifications scheduled via Service Worker
    ============================================================ */
 
 'use strict';
@@ -20,15 +23,12 @@ let API_URL = localStorage.getItem('blog-api-url') || '';
 
 async function apiCall(params) {
   if (!API_URL) {
-    showToast('Please set your Apps Script URL in Settings first.');
-    openSettingsModal();
     throw new Error('API URL not configured');
   }
   const query = new URLSearchParams(params).toString();
   const response = await fetch(`${API_URL}?${query}`);
   const data = await response.json();
   if (data && data.error) {
-    showToast(`API Error: ${data.error}`);
     throw new Error(data.error);
   }
   return data;
@@ -167,17 +167,54 @@ function updateThemeIcon() {
  * @param {string} type        — "Habit" or "Task"
  * @param {string} containerId — ID of the target container
  */
-function renderList(items, type, containerId) {
-  const container = document.getElementById(containerId);
-  if (!container) return;
-  container.innerHTML = '';
+// State for infinite scroll pagination
+let _renderedItems = [];
+let _renderedType = '';
+let _renderedContainerId = '';
+let _shownCount = 6;
+let _scrollObserver = null;
 
-  if (!items || items.length === 0) {
+function renderList(items, type, containerId) {
+  _renderedItems = items || [];
+  _renderedType = type;
+  _renderedContainerId = containerId;
+  _shownCount = 6;
+  
+  renderNextBatch();
+}
+
+function renderNextBatch() {
+  const container = document.getElementById(_renderedContainerId);
+  if (!container) return;
+
+  // Clean up observer if it exists
+  if (_scrollObserver) {
+    _scrollObserver.disconnect();
+    _scrollObserver = null;
+  }
+
+  // Remove existing sentinel if it exists
+  const existingSentinel = document.getElementById('infinite-scroll-sentinel');
+  if (existingSentinel) {
+    existingSentinel.remove();
+  }
+
+  // Clear container if this is the first batch
+  if (_shownCount === 6) {
+    container.innerHTML = '';
+  }
+
+  if (_renderedItems.length === 0) {
     container.innerHTML = '<div class="empty-state">No items yet. Add them in Settings or click + Add.</div>';
     return;
   }
 
-  items.forEach((item, i) => {
+  // Slice only the new items to render in this batch
+  const startIndex = _shownCount - 6;
+  const endIndex = Math.min(_renderedItems.length, _shownCount);
+  const itemsToRender = _renderedItems.slice(startIndex, endIndex);
+
+  itemsToRender.forEach((item, i) => {
     const card = document.createElement('div');
     card.className = 'card';
     card.style.animationDelay = `${i * 0.05}s`;
@@ -193,7 +230,7 @@ function renderList(items, type, containerId) {
     titleRow.appendChild(name);
 
     // Bad Habit Badge
-    if (type === 'Habit' && item.behaviorType === 'Bad') {
+    if (_renderedType === 'Habit' && item.behaviorType === 'Bad') {
       const badge = document.createElement('span');
       badge.textContent = 'To Quit';
       badge.style.fontSize = '0.68rem';
@@ -207,10 +244,15 @@ function renderList(items, type, containerId) {
     }
     card.appendChild(titleRow);
 
-    // Optional meta (time, place)
+    // Optional meta (time, place, dates)
     const parts = [];
-    if (item.time) parts.push(item.time);
+    if (item.time) parts.push(formatTimeForDisplay(item.time));
     if (item.place) parts.push(item.place);
+    if (_renderedType === 'Task') {
+      if (item.taskDate) parts.push(`Date: ${item.taskDate}`);
+      if (item.startDate) parts.push(`Start: ${item.startDate}`);
+      if (item.deadline) parts.push(`Deadline: ${item.deadline}`);
+    }
     if (parts.length) {
       const meta = document.createElement('span');
       meta.className = 'card-meta';
@@ -218,9 +260,47 @@ function renderList(items, type, containerId) {
       card.appendChild(meta);
     }
 
-    card.addEventListener('click', () => openModal(item, type));
+    card.addEventListener('click', () => openModal(item, _renderedType));
     container.appendChild(card);
   });
+
+  // If there are more items, append a sentinel and observe it
+  if (_shownCount < _renderedItems.length) {
+    const sentinel = document.createElement('div');
+    sentinel.id = 'infinite-scroll-sentinel';
+    sentinel.style.height = '40px';
+    sentinel.style.display = 'flex';
+    sentinel.style.justifyContent = 'center';
+    sentinel.style.alignItems = 'center';
+    sentinel.innerHTML = '<div class="loading-spinner" style="width:20px;height:20px;margin:0;"></div>';
+    container.appendChild(sentinel);
+
+    _scrollObserver = new IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting) {
+        _shownCount += 6;
+        renderNextBatch();
+      }
+    }, { rootMargin: '100px' });
+    _scrollObserver.observe(sentinel);
+  }
+}
+
+/**
+ * Format a 24h time string (HH:MM) to a friendly display format (h:MM AM/PM).
+ * Passes through non-standard strings unchanged.
+ * @param {string} timeStr
+ * @returns {string}
+ */
+function formatTimeForDisplay(timeStr) {
+  if (!timeStr) return '';
+  const match = timeStr.match(/^(\d{1,2}):(\d{2})$/);
+  if (!match) return timeStr; // Already in friendly format or non-parseable
+  let h = parseInt(match[1]);
+  const m = match[2];
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  if (h === 0) h = 12;
+  else if (h > 12) h -= 12;
+  return `${h}:${m} ${ampm}`;
 }
 
 // ============================================================
@@ -241,22 +321,38 @@ function openModal(item, type) {
   const badge = document.getElementById('modal-badge');
   const textDone = document.getElementById('status-text-done');
   const textFailed = document.getElementById('status-text-failed');
+  const notesField = document.getElementById('notes');
+
+  // Show/hide quit-specific chips and configure notes placeholder
+  const quitChips = document.querySelectorAll('.quit-chip');
+  const resistSection = document.getElementById('resist-section');
+  const resistNotes = document.getElementById('resist-notes');
+  const reasonLabel = document.getElementById('reason-section-label');
 
   if (type === 'Task') {
     badge.textContent = 'Task';
     badge.style.color = 'var(--accent)';
     textDone.textContent = 'Done';
     textFailed.textContent = 'Failed';
+    quitChips.forEach(c => c.classList.add('hidden'));
+    if (notesField) notesField.placeholder = 'Notes (optional)';
+    if (reasonLabel) reasonLabel.textContent = 'What happened?';
   } else if (behaviorType === 'Bad') {
     badge.textContent = 'Bad Habit (To Quit)';
     badge.style.color = 'var(--danger)';
     textDone.textContent = 'Resisted (Success)';
     textFailed.textContent = 'Indulged (Failure)';
+    quitChips.forEach(c => c.classList.remove('hidden'));
+    if (notesField) notesField.placeholder = 'What triggered you? What could you do differently next time?';
+    if (reasonLabel) reasonLabel.textContent = 'What made you give in?';
   } else {
     badge.textContent = 'Good Habit (To Build)';
     badge.style.color = 'var(--success)';
     textDone.textContent = 'Done';
     textFailed.textContent = 'Failed';
+    quitChips.forEach(c => c.classList.add('hidden'));
+    if (notesField) notesField.placeholder = 'Notes (optional)';
+    if (reasonLabel) reasonLabel.textContent = 'What happened?';
   }
 
   // Pre-fill Date & Time inputs with local current date & time
@@ -278,17 +374,36 @@ function openModal(item, type) {
       remindWrapper.style.display = 'block';
       remindCheckbox.checked = !!item.remind;
       
-      // Temporarily detach old listener and attach new dynamic listener
+      // Dynamically handle reminder toggle
       remindCheckbox.onclick = async () => {
-        try {
-          await apiToggleReminder(type, name, remindCheckbox.checked);
-          showToast(`Reminder ${remindCheckbox.checked ? 'Enabled' : 'Disabled'}`);
-          if (remindCheckbox.checked) {
-            scheduleNotification(name, item.time);
-          }
-        } catch (err) {
-          console.error("Failed to toggle reminder status:", err);
+        const newRemindState = remindCheckbox.checked;
+        
+        // Update locally in IndexedDB immediately
+        item.remind = newRemindState;
+        if (type === 'Habit') {
+          await dbPutHabit(item);
+        } else {
+          await dbPutTask(item);
         }
+
+        // Queue sync
+        await dbAddToSyncQueue('toggleReminder', {
+          action: 'toggleReminder',
+          type,
+          name,
+          remind: newRemindState ? 'true' : 'false'
+        });
+
+        showToast(`Reminder ${newRemindState ? 'Enabled' : 'Disabled'}`);
+
+        if (newRemindState) {
+          scheduleNotificationViaSW(name, item.time, type);
+        } else {
+          cancelNotificationViaSW(name);
+        }
+
+        // Try to sync immediately if online
+        if (navigator.onLine) syncToSheets();
       };
     } else {
       remindWrapper.style.display = 'none';
@@ -303,8 +418,33 @@ function openModal(item, type) {
   // Reset reason chips
   document.querySelectorAll('.chip').forEach((c) => c.classList.remove('active'));
 
-  // Hide reason section
+  // Hide reason section and resist section
   document.getElementById('reason-section').classList.remove('visible');
+  if (resistSection) resistSection.classList.remove('visible');
+  if (resistNotes) resistNotes.value = '';
+
+  // Clean up and reset new sections
+  const buildDoneNotes = document.getElementById('build-done-notes');
+  const buildFailNotes = document.getElementById('build-fail-notes');
+  const buildBetterNotes = document.getElementById('build-better-notes');
+  const taskDoneNotes = document.getElementById('task-done-notes');
+  const taskFailNotes = document.getElementById('task-fail-notes');
+
+  if (buildDoneNotes) buildDoneNotes.value = '';
+  if (buildFailNotes) buildFailNotes.value = '';
+  if (buildBetterNotes) buildBetterNotes.value = '';
+  if (taskDoneNotes) taskDoneNotes.value = '';
+  if (taskFailNotes) taskFailNotes.value = '';
+
+  const buildDoneSection = document.getElementById('build-done-section');
+  const buildFailSection = document.getElementById('build-fail-section');
+  const taskDoneSection = document.getElementById('task-done-section');
+  const taskFailSection = document.getElementById('task-fail-section');
+
+  if (buildDoneSection) buildDoneSection.classList.remove('visible');
+  if (buildFailSection) buildFailSection.classList.remove('visible');
+  if (taskDoneSection) taskDoneSection.classList.remove('visible');
+  if (taskFailSection) taskFailSection.classList.remove('visible');
 
   // Reset save button
   const saveBtn = document.getElementById('save-btn');
@@ -326,30 +466,164 @@ function closeModal() {
 /** Enable the save button only when required fields are filled. */
 function updateSaveButton() {
   const btn = document.getElementById('save-btn');
-  if (modalState.status === 'Done') {
-    btn.disabled = false;
-  } else if (modalState.status === 'Failed' || modalState.status === 'Skipped') {
-    btn.disabled = !modalState.reason;
-  } else {
+  if (!modalState.status) {
     btn.disabled = true;
+    return;
+  }
+
+  if (modalState.type === 'Habit') {
+    if (modalState.status === 'Done') {
+      if (modalState.behaviorType === 'Bad') {
+        // Quit habit resisted — require resist notes
+        const resistNotes = document.getElementById('resist-notes');
+        btn.disabled = !(resistNotes && resistNotes.value.trim());
+      } else {
+        // Build (good) habit done — require "how I did it"
+        const buildDoneNotes = document.getElementById('build-done-notes');
+        btn.disabled = !(buildDoneNotes && buildDoneNotes.value.trim());
+      }
+    } else if (modalState.status === 'Failed') {
+      if (modalState.behaviorType === 'Good') {
+        // Build habit failed — require both fail reasons and how to do better
+        const failNotes = document.getElementById('build-fail-notes');
+        const betterNotes = document.getElementById('build-better-notes');
+        btn.disabled = !(failNotes && failNotes.value.trim() && betterNotes && betterNotes.value.trim());
+      } else {
+        btn.disabled = !modalState.reason;
+      }
+    } else if (modalState.status === 'Skipped') {
+      btn.disabled = !modalState.reason;
+    }
+  } else if (modalState.type === 'Task') {
+    if (modalState.status === 'Done') {
+      // Task completed — require how it was achieved
+      const taskDoneNotes = document.getElementById('task-done-notes');
+      btn.disabled = !(taskDoneNotes && taskDoneNotes.value.trim());
+    } else if (modalState.status === 'Failed') {
+      // Task failed — require why it failed
+      const taskFailNotes = document.getElementById('task-fail-notes');
+      btn.disabled = !(taskFailNotes && taskFailNotes.value.trim());
+    } else if (modalState.status === 'Skipped') {
+      btn.disabled = !modalState.reason;
+    }
   }
 }
 
-/** Handle the save button click. */
+/** Handle the save button click — offline-first. */
 async function handleSave() {
   const btn = document.getElementById('save-btn');
-  const notes = document.getElementById('notes').value.trim();
+  let notes = document.getElementById('notes').value.trim();
   const dateVal = document.getElementById('log-date').value;
   const timeVal = document.getElementById('log-time').value;
+
+  if (modalState.type === 'Habit') {
+    if (modalState.behaviorType === 'Bad' && modalState.status === 'Done') {
+      // For quit habits that were resisted, capture resist notes
+      const resistNotes = document.getElementById('resist-notes');
+      if (resistNotes && resistNotes.value.trim()) {
+        notes = '[RESISTED] ' + resistNotes.value.trim();
+      }
+    } else if (modalState.behaviorType === 'Good' && modalState.status === 'Done') {
+      // For build habits completed — capture how I did it
+      const buildDoneNotes = document.getElementById('build-done-notes');
+      if (buildDoneNotes && buildDoneNotes.value.trim()) {
+        notes = '[DONE] How I did it: ' + buildDoneNotes.value.trim();
+      }
+    } else if (modalState.behaviorType === 'Good' && modalState.status === 'Failed') {
+      // For build habits that failed, capture how it failed and how to do better
+      const failNotes = document.getElementById('build-fail-notes');
+      const betterNotes = document.getElementById('build-better-notes');
+      if (failNotes && betterNotes) {
+        notes = `[FAILED] How I failed: ${failNotes.value.trim()} | How to do better: ${betterNotes.value.trim()}`;
+      }
+    }
+  } else if (modalState.type === 'Task') {
+    if (modalState.status === 'Done') {
+      // Task completed notes
+      const taskDoneNotes = document.getElementById('task-done-notes');
+      if (taskDoneNotes) {
+        notes = '[DONE] How I achieved it: ' + taskDoneNotes.value.trim();
+      }
+    } else if (modalState.status === 'Failed') {
+      // Task failed notes
+      const taskFailNotes = document.getElementById('task-fail-notes');
+      if (taskFailNotes) {
+        notes = '[FAILED] Why I failed: ' + taskFailNotes.value.trim();
+      }
+    }
+  }
 
   btn.disabled = true;
   btn.textContent = 'Saving…';
 
+  const logEntry = {
+    date: dateVal || new Date().toLocaleDateString('en-CA'),
+    time: timeVal || new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }),
+    type: modalState.type,
+    name: modalState.name,
+    status: modalState.status,
+    reason: modalState.reason || '',
+    notes: notes || ''
+  };
+
   try {
-    await saveLog(modalState.type, modalState.name, modalState.status, modalState.reason, notes, dateVal, timeVal);
+    // 1. Save to IndexedDB immediately (always succeeds)
+    await dbAddLog(logEntry);
+
+    // 2. Queue for sync to Sheets
+    await dbAddToSyncQueue('saveLog', {
+      action: 'saveLog',
+      ...logEntry
+    });
+
+    // 3. Save reflection entry (strategy / fail analysis) to separate Reflections store
+    const reflEntry = {
+      date:   logEntry.date,
+      type:   logEntry.type,
+      name:   logEntry.name,
+      status: logEntry.status,
+      strategy:   '',
+      failReason: '',
+      betterPlan: '',
+      synced: false
+    };
+
+    if (modalState.type === 'Habit' && modalState.behaviorType === 'Good' && modalState.status === 'Done') {
+      const bd = document.getElementById('build-done-notes');
+      reflEntry.strategy = bd ? bd.value.trim() : '';
+    } else if (modalState.type === 'Habit' && modalState.behaviorType === 'Bad' && modalState.status === 'Done') {
+      const rn = document.getElementById('resist-notes');
+      reflEntry.strategy = rn ? rn.value.trim() : '';
+    } else if (modalState.type === 'Habit' && modalState.behaviorType === 'Good' && modalState.status === 'Failed') {
+      const fn = document.getElementById('build-fail-notes');
+      const bn = document.getElementById('build-better-notes');
+      reflEntry.failReason = fn ? fn.value.trim() : '';
+      reflEntry.betterPlan = bn ? bn.value.trim() : '';
+    } else if (modalState.type === 'Task' && modalState.status === 'Done') {
+      const td = document.getElementById('task-done-notes');
+      reflEntry.strategy = td ? td.value.trim() : '';
+    } else if (modalState.type === 'Task' && modalState.status === 'Failed') {
+      const tf = document.getElementById('task-fail-notes');
+      reflEntry.failReason = tf ? tf.value.trim() : '';
+    }
+
+    // Only save reflection if there's meaningful content
+    const hasReflection = reflEntry.strategy || reflEntry.failReason || reflEntry.betterPlan;
+    if (hasReflection) {
+      await dbAddReflection(reflEntry);
+    }
+
     btn.textContent = '✓ Saved';
     btn.classList.add('saved');
-    showToast(`${modalState.name} logged as ${modalState.status}`);
+
+    if (navigator.onLine) {
+      showToast(`${modalState.name} logged as ${modalState.status}`);
+      // Sync in background
+      syncToSheets();
+    } else {
+      showToast(`Saved locally — will sync when online`);
+    }
+
     setTimeout(closeModal, 600);
   } catch (err) {
     btn.textContent = 'Error — Tap to Retry';
@@ -358,7 +632,7 @@ async function handleSave() {
   }
 }
 
-/** Handle the item delete button click. */
+/** Handle the item delete button click — offline-first. */
 async function handleDeleteItem() {
   if (!confirm(`Are you sure you want to delete "${modalState.name}"? This removes it permanently.`)) {
     return;
@@ -369,10 +643,38 @@ async function handleDeleteItem() {
   btn.textContent = 'Deleting…';
 
   try {
-    await apiDeleteItem(modalState.type, modalState.name);
+    // 1. Delete from IndexedDB immediately
+    if (modalState.type === 'Habit') {
+      await dbDeleteHabit(modalState.name);
+    } else {
+      await dbDeleteTask(modalState.name);
+    }
+
+    // 2. Cancel any scheduled notification
+    cancelNotificationViaSW(modalState.name);
+
+    // 3. Queue for sync
+    await dbAddToSyncQueue('deleteItem', {
+      action: 'deleteItem',
+      type: modalState.type,
+      name: modalState.name
+    });
+
     showToast(`${modalState.name} deleted`);
     closeModal();
-    setTimeout(() => location.reload(), 600);
+
+    // Re-render the list from IndexedDB
+    const isTasksPage = window.location.pathname.includes('tasks.html');
+    if (isTasksPage) {
+      const items = await dbGetAllTasks();
+      renderList(items, 'Task', 'list');
+    } else {
+      const items = await dbGetAllHabits();
+      renderList(items, 'Habit', 'list');
+    }
+
+    // Sync in background
+    if (navigator.onLine) syncToSheets();
   } catch (err) {
     btn.disabled = false;
     btn.textContent = 'Delete';
@@ -406,18 +708,70 @@ function initModal() {
       btn.classList.add(`active-${status.toLowerCase()}`);
       modalState.status = status;
 
-      // Show or hide reason section
-      const reasonSection = document.getElementById('reason-section');
-      if (status === 'Failed' || status === 'Skipped') {
-        reasonSection.classList.add('visible');
-      } else {
-        reasonSection.classList.remove('visible');
-        modalState.reason = '';
-        document.querySelectorAll('.chip').forEach((c) => c.classList.remove('active'));
+      // Get sections
+      const reasonSection   = document.getElementById('reason-section');
+      const resistSection   = document.getElementById('resist-section');
+      const buildDoneSection = document.getElementById('build-done-section');
+      const buildFailSection = document.getElementById('build-fail-section');
+      const taskDoneSection = document.getElementById('task-done-section');
+      const taskFailSection = document.getElementById('task-fail-section');
+
+      // Hide all dynamic sections first
+      if (reasonSection)    reasonSection.classList.remove('visible');
+      if (resistSection)    resistSection.classList.remove('visible');
+      if (buildDoneSection) buildDoneSection.classList.remove('visible');
+      if (buildFailSection) buildFailSection.classList.remove('visible');
+      if (taskDoneSection)  taskDoneSection.classList.remove('visible');
+      if (taskFailSection)  taskFailSection.classList.remove('visible');
+
+      // Clear reason unless using chips
+      modalState.reason = '';
+      document.querySelectorAll('.chip').forEach((c) => c.classList.remove('active'));
+
+      if (modalState.type === 'Habit') {
+        const isQuitHabit = modalState.behaviorType === 'Bad';
+        if (status === 'Done') {
+          if (isQuitHabit) {
+            // Bad habit resisted
+            if (resistSection) resistSection.classList.add('visible');
+          } else {
+            // Good (build) habit done — show how I did it
+            if (buildDoneSection) buildDoneSection.classList.add('visible');
+          }
+        } else if (status === 'Failed') {
+          if (isQuitHabit) {
+            // Bad habit indulged — show reason chips
+            if (reasonSection) reasonSection.classList.add('visible');
+          } else {
+            // Good habit failed — show text reflection inputs
+            if (buildFailSection) buildFailSection.classList.add('visible');
+          }
+        } else if (status === 'Skipped') {
+          if (reasonSection) reasonSection.classList.add('visible');
+        }
+      } else if (modalState.type === 'Task') {
+        if (status === 'Done') {
+          // Task completed
+          if (taskDoneSection) taskDoneSection.classList.add('visible');
+        } else if (status === 'Failed') {
+          // Task failed
+          if (taskFailSection) taskFailSection.classList.add('visible');
+        } else if (status === 'Skipped') {
+          if (reasonSection) reasonSection.classList.add('visible');
+        }
       }
 
       updateSaveButton();
     });
+  });
+
+  // Wire up change/input listener for all dynamic textareas
+  const inputsToTrack = ['resist-notes', 'build-done-notes', 'build-fail-notes', 'build-better-notes', 'task-done-notes', 'task-fail-notes'];
+  inputsToTrack.forEach((id) => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.addEventListener('input', updateSaveButton);
+    }
   });
 
   // Reason chips
@@ -457,25 +811,53 @@ function showToast(message) {
 }
 
 // ============================================================
-// Page Initializers
+// Page Initializers — Offline-First Pattern
 // ============================================================
 
-/** Load and display habits (index.html). */
+/**
+ * Load and display habits (index.html).
+ * 1. Try IndexedDB first
+ * 2. If empty + online → restore from Sheets
+ * 3. If empty + offline → show empty state
+ * 4. If has data → render, then background sync
+ */
 async function initHabitsPage() {
   const loading = document.getElementById('loading');
+
   try {
-    const data = await fetchHabits();
+    // Initialize IndexedDB
+    await dbInit();
+
+    // Check if IndexedDB has data
+    const hasData = await dbHasData();
+
+    if (!hasData && navigator.onLine && API_URL) {
+      // First load or cache cleared — restore from Sheets
+      loading.innerHTML = '<div class="loading-spinner"></div><p>Restoring data from cloud…</p>';
+      await restoreFromSheets();
+    } else if (!hasData && !navigator.onLine) {
+      loading.classList.add('hidden');
+      renderList([], 'Habit', 'list');
+      return;
+    }
+
+    // Load from IndexedDB (the primary source)
+    const items = await dbGetAllHabits();
     loading.classList.add('hidden');
-    const items = data.data || data;
     renderList(items, 'Habit', 'list');
 
-    // Schedule active notification reminders
+    // Schedule active notification reminders via SW
     if (items && Array.isArray(items)) {
       items.forEach((item) => {
         if (item.remind && item.time) {
-          scheduleNotification(item.name, item.time);
+          scheduleNotificationViaSW(item.name, item.time, 'Habit');
         }
       });
+    }
+
+    // Background sync: push any queued changes
+    if (navigator.onLine && API_URL) {
+      syncToSheets();
     }
   } catch (err) {
     loading.innerHTML = '<p>Could not load habits.<br>Check your connection.</p>';
@@ -483,22 +865,43 @@ async function initHabitsPage() {
   }
 }
 
-/** Load and display tasks (tasks.html). */
+/**
+ * Load and display tasks (tasks.html).
+ * Same offline-first pattern as habits.
+ */
 async function initTasksPage() {
   const loading = document.getElementById('loading');
+
   try {
-    const data = await fetchTasks();
+    await dbInit();
+
+    const hasData = await dbHasData();
+
+    if (!hasData && navigator.onLine && API_URL) {
+      loading.innerHTML = '<div class="loading-spinner"></div><p>Restoring data from cloud…</p>';
+      await restoreFromSheets();
+    } else if (!hasData && !navigator.onLine) {
+      loading.classList.add('hidden');
+      renderList([], 'Task', 'list');
+      return;
+    }
+
+    const items = await dbGetAllTasks();
     loading.classList.add('hidden');
-    const items = data.data || data;
     renderList(items, 'Task', 'list');
 
-    // Schedule active notification reminders
+    // Schedule active notification reminders via SW
     if (items && Array.isArray(items)) {
       items.forEach((item) => {
         if (item.remind && item.time) {
-          scheduleNotification(item.name, item.time);
+          scheduleNotificationViaSW(item.name, item.time, 'Task');
         }
       });
+    }
+
+    // Background sync
+    if (navigator.onLine && API_URL) {
+      syncToSheets();
     }
   } catch (err) {
     loading.innerHTML = '<p>Could not load tasks.<br>Check your connection.</p>';
@@ -562,7 +965,14 @@ async function resetAppAndClearCache() {
   // 1. Clear local storage
   localStorage.clear();
 
-  // 2. Unregister service workers
+  // 2. Clear IndexedDB
+  try {
+    await dbClearAll();
+  } catch (e) {
+    console.warn('Could not clear IndexedDB:', e);
+  }
+
+  // 3. Unregister service workers
   if ('serviceWorker' in navigator) {
     const registrations = await navigator.serviceWorker.getRegistrations();
     for (let registration of registrations) {
@@ -570,7 +980,7 @@ async function resetAppAndClearCache() {
     }
   }
 
-  // 3. Clear PWA caches
+  // 4. Clear PWA caches
   if ('caches' in window) {
     const keys = await caches.keys();
     for (let key of keys) {
@@ -647,7 +1057,7 @@ window.addEventListener('appinstalled', (evt) => {
 });
 
 // ============================================================
-// Add Item Modal & Logic
+// Add Item Modal & Logic — Offline-First
 // ============================================================
 
 /** Open the add item modal. */
@@ -657,6 +1067,16 @@ function openAddItemModal() {
     document.getElementById('new-item-name').value = '';
     document.getElementById('new-item-time').value = '';
     document.getElementById('new-item-place').value = '';
+    
+    // Clear new task date fields if they exist
+    const taskDateInput = document.getElementById('new-item-task-date');
+    const startDateInput = document.getElementById('new-item-start-date');
+    const deadlineInput = document.getElementById('new-item-deadline');
+    
+    if (taskDateInput) taskDateInput.value = '';
+    if (startDateInput) startDateInput.value = '';
+    if (deadlineInput) deadlineInput.value = '';
+
     overlay.classList.add('active');
     document.body.style.overflow = 'hidden';
   }
@@ -671,7 +1091,7 @@ function closeAddItemModal() {
   }
 }
 
-/** Submit new habit/task item to spreadsheet. */
+/** Submit new habit/task item — saves to IndexedDB first, then queues sync. */
 async function handleAddItemSave(type) {
   const nameInput = document.getElementById('new-item-name');
   const timeInput = document.getElementById('new-item-time');
@@ -681,6 +1101,15 @@ async function handleAddItemSave(type) {
   const name = nameInput.value.trim();
   const time = timeInput.value.trim();
   const place = placeInput.value.trim();
+
+  // Retrieve task specific fields if type is Task
+  const taskDateInput = document.getElementById('new-item-task-date');
+  const startDateInput = document.getElementById('new-item-start-date');
+  const deadlineInput = document.getElementById('new-item-deadline');
+
+  const taskDate = (type === 'Task' && taskDateInput) ? taskDateInput.value : '';
+  const startDate = (type === 'Task' && startDateInput) ? startDateInput.value : '';
+  const deadline = (type === 'Task' && deadlineInput) ? deadlineInput.value : '';
 
   // Retrieve behaviorType from select dropdown if on Habits page
   const typeSelect = document.getElementById('new-item-type');
@@ -699,14 +1128,63 @@ async function handleAddItemSave(type) {
   saveBtn.textContent = 'Saving…';
 
   try {
-    await apiAddItem(type, name, time, place, behaviorType, remind);
-    showToast(`${type} created successfully`);
-    closeAddItemModal();
-    // Schedule a reminder notification for this item if remind is checked and a time was provided
-    if (remind && time) {
-      scheduleNotification(name, time);
+    // 1. Save to IndexedDB immediately
+    const item = {
+      name,
+      time: time || '',
+      place: place || '',
+      behaviorType: behaviorType || 'Good',
+      remind: remind,
+      taskDate: taskDate,
+      startDate: startDate,
+      deadline: deadline
+    };
+
+    if (type === 'Habit') {
+      await dbPutHabit(item);
+    } else {
+      await dbPutTask(item);
     }
-    setTimeout(() => location.reload(), 800);
+
+    // 2. Queue for sync to Sheets
+    await dbAddToSyncQueue('addItem', {
+      action: 'addItem',
+      type,
+      name,
+      time: time || '',
+      place: place || '',
+      behaviorType: behaviorType || 'Good',
+      remind: remind ? 'true' : 'false',
+      taskDate: taskDate,
+      startDate: startDate,
+      deadline: deadline
+    });
+
+    // 3. Schedule notification via SW if reminder is enabled
+    if (remind && time) {
+      scheduleNotificationViaSW(name, time, type);
+    }
+
+    if (navigator.onLine) {
+      showToast(`${type} created successfully`);
+      syncToSheets();
+    } else {
+      showToast(`${type} saved locally — will sync when online`);
+    }
+
+    closeAddItemModal();
+
+    // Re-render list from IndexedDB
+    if (type === 'Habit') {
+      const items = await dbGetAllHabits();
+      renderList(items, 'Habit', 'list');
+    } else {
+      const items = await dbGetAllTasks();
+      renderList(items, 'Task', 'list');
+    }
+
+    saveBtn.disabled = false;
+    saveBtn.textContent = `Create ${type}`;
   } catch (err) {
     saveBtn.disabled = false;
     saveBtn.textContent = `Create ${type}`;
@@ -736,7 +1214,7 @@ function initAddItemModal(type) {
 }
 
 // ============================================================
-// Notifications & Reminders
+// Notifications & Reminders — Service Worker Based
 // ============================================================
 
 /** Request browser notification permission. */
@@ -748,43 +1226,36 @@ async function requestNotificationPermission() {
 }
 
 /**
- * Schedule a client-side reminder using service worker.
- * Checks for standard time strings (e.g. HH:MM AM/PM or HH:MM)
+ * Schedule a notification by sending a message to the service worker.
+ * The SW maintains timers that persist across page navigations.
+ *
+ * @param {string} name       — item name
+ * @param {string} timeString — time in HH:MM (24h) or HH:MM AM/PM format
+ * @param {string} itemType   — "Habit" or "Task"
  */
-function scheduleNotification(title, timeString) {
+function scheduleNotificationViaSW(name, timeString, itemType) {
   if (!('Notification' in window) || Notification.permission !== 'granted') return;
-  
-  // Parse time input (e.g. "07:00 AM", "19:30", "7:00 PM")
-  const match = timeString.match(/(\d+):(\d+)\s*(AM|PM)?/i);
-  if (!match) return; // Ignore unstructured text time inputs
+  if (!navigator.serviceWorker || !navigator.serviceWorker.controller) return;
 
-  let hours = parseInt(match[1]);
-  const minutes = parseInt(match[2]);
-  const ampm = match[3];
+  navigator.serviceWorker.controller.postMessage({
+    type: 'schedule-notification',
+    payload: { name, timeString, itemType }
+  });
 
-  if (ampm) {
-    if (ampm.toUpperCase() === 'PM' && hours < 12) hours += 12;
-    if (ampm.toUpperCase() === 'AM' && hours === 12) hours = 0;
-  }
+  console.log(`Sent schedule request to SW for "${name}" at ${timeString}`);
+}
 
-  const now = new Date();
-  const reminderTime = new Date();
-  reminderTime.setHours(hours, minutes, 0, 0);
+/**
+ * Cancel a scheduled notification via the service worker.
+ * @param {string} name — item name
+ */
+function cancelNotificationViaSW(name) {
+  if (!navigator.serviceWorker || !navigator.serviceWorker.controller) return;
 
-  // If time has already passed today, schedule for tomorrow
-  if (reminderTime <= now) {
-    reminderTime.setDate(reminderTime.getDate() + 1);
-  }
-
-  const delayMs = reminderTime.getTime() - now.getTime();
-  
-  console.log(`Scheduling reminder for "${title}" at ${reminderTime} (in ${Math.round(delayMs / 1000)} seconds)`);
-
-  setTimeout(() => {
-    sendLocalNotification(title);
-    // Re-schedule for next day
-    scheduleNotification(title, timeString);
-  }, delayMs);
+  navigator.serviceWorker.controller.postMessage({
+    type: 'cancel-notification',
+    payload: { name }
+  });
 }
 
 /**
@@ -856,4 +1327,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const themeBtn = document.getElementById('theme-toggle');
   if (themeBtn) themeBtn.addEventListener('click', toggleTheme);
+
+  // Initialize IndexedDB on every page load
+  dbInit();
 });

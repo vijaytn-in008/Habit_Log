@@ -53,14 +53,14 @@ function initializeSheetsIfNeeded() {
     }
   }
 
-  // 2. Setup "Tasks" sheet (columns: Name, Time, Place, Remind)
+  // 2. Setup "Tasks" sheet (columns: Name, Time, Place, Remind, TaskDate, StartDate, Deadline)
   var tasksSheet = ss.getSheetByName("Tasks");
   if (!tasksSheet) {
     tasksSheet = ss.insertSheet("Tasks");
-    tasksSheet.appendRow(["Name", "Time", "Place", "Remind"]);
+    tasksSheet.appendRow(["Name", "Time", "Place", "Remind", "TaskDate", "StartDate", "Deadline"]);
     // Add default templates
-    tasksSheet.appendRow(["Plan Day", "08:00 AM", "Desk", "Yes"]);
-    tasksSheet.appendRow(["Check Emails", "05:00 PM", "Office", "No"]);
+    tasksSheet.appendRow(["Plan Day", "08:00 AM", "Desk", "Yes", "", "", ""]);
+    tasksSheet.appendRow(["Check Emails", "05:00 PM", "Office", "No", "", "", ""]);
   } else {
     // Check if Remind column exists (Column D)
     if (tasksSheet.getLastColumn() < 4) {
@@ -75,6 +75,16 @@ function initializeSheetsIfNeeded() {
         range.setValues(values);
       }
     }
+    // Check if extra task date columns exist
+    if (tasksSheet.getLastColumn() < 5) {
+      tasksSheet.getRange(1, 5).setValue("TaskDate");
+    }
+    if (tasksSheet.getLastColumn() < 6) {
+      tasksSheet.getRange(1, 6).setValue("StartDate");
+    }
+    if (tasksSheet.getLastColumn() < 7) {
+      tasksSheet.getRange(1, 7).setValue("Deadline");
+    }
   }
 
   // 3. Setup "Logs" sheet
@@ -82,6 +92,19 @@ function initializeSheetsIfNeeded() {
   if (!logsSheet) {
     logsSheet = ss.insertSheet("Logs");
     logsSheet.appendRow(["Date", "Time", "Type", "Name", "Status", "Reason", "Notes"]);
+  }
+
+  // 4. Setup "Reflections" sheet (separate from Logs — stores analyzed reflection data)
+  var reflSheet = ss.getSheetByName("Reflections");
+  if (!reflSheet) {
+    reflSheet = ss.insertSheet("Reflections");
+    // Key = date|type|name — used for dedup. Strategy = how I succeeded. FailReason + BetterPlan for failures.
+    reflSheet.appendRow(["Key", "Date", "Type", "Name", "Status", "Strategy", "FailReason", "BetterPlan"]);
+  } else {
+    // Migrate: add Key column if missing
+    if (reflSheet.getLastColumn() < 1 || reflSheet.getRange(1, 1).getValue() !== 'Key') {
+      // Already has data but missing Key — skip migration to be safe
+    }
   }
 }
 
@@ -94,14 +117,16 @@ function doGet(e) {
     initializeSheetsIfNeeded();
     var action = e.parameter.action;
 
-    if (action === 'ping')           return jsonResponse({ status: 'ok', message: 'Connected to spreadsheet: ' + SpreadsheetApp.getActiveSpreadsheet().getName() });
-    if (action === 'getHabits')      return getItems('Habits');
-    if (action === 'getTasks')       return getItems('Tasks');
-    if (action === 'getLogs')        return getLogs();
-    if (action === 'saveLog')        return saveLog(e.parameter);
-    if (action === 'addItem')        return addItem(e.parameter);
-    if (action === 'deleteItem')     return deleteItem(e.parameter);
-    if (action === 'toggleReminder') return toggleReminder(e.parameter);
+    if (action === 'ping')            return jsonResponse({ status: 'ok', message: 'Connected to spreadsheet: ' + SpreadsheetApp.getActiveSpreadsheet().getName() });
+    if (action === 'getHabits')       return getItems('Habits');
+    if (action === 'getTasks')        return getItems('Tasks');
+    if (action === 'getLogs')         return getLogs();
+    if (action === 'saveLog')         return saveLog(e.parameter);
+    if (action === 'addItem')         return addItem(e.parameter);
+    if (action === 'deleteItem')      return deleteItem(e.parameter);
+    if (action === 'toggleReminder')  return toggleReminder(e.parameter);
+    if (action === 'saveReflection')  return saveReflection(e.parameter);
+    if (action === 'getReflections')  return getReflections();
 
     return jsonResponse({ error: 'Unknown action: ' + action });
   } catch (err) {
@@ -119,10 +144,11 @@ function doPost(e) {
     var payload = JSON.parse(e.postData.contents);
     var action  = payload.action;
 
-    if (action === 'saveLog')        return saveLog(payload);
-    if (action === 'addItem')        return addItem(payload);
-    if (action === 'deleteItem')     return deleteItem(payload);
-    if (action === 'toggleReminder') return toggleReminder(payload);
+    if (action === 'saveLog')         return saveLog(payload);
+    if (action === 'addItem')         return addItem(payload);
+    if (action === 'deleteItem')      return deleteItem(payload);
+    if (action === 'toggleReminder')  return toggleReminder(payload);
+    if (action === 'saveReflection')  return saveReflection(payload);
 
     return jsonResponse({ error: 'Unknown action: ' + action });
   } catch (err) {
@@ -151,7 +177,10 @@ function getItems(sheetName) {
         time:          rows[i][1] ? rows[i][1].toString().trim() : '',
         place:         rows[i][2] ? rows[i][2].toString().trim() : '',
         behaviorType:  (sheetName === 'Habits' && rows[i][3]) ? rows[i][3].toString().trim() : 'Good',
-        remind:        (sheetName === 'Habits' ? (rows[i][4] === 'Yes') : (rows[i][3] === 'Yes'))
+        remind:        (sheetName === 'Habits' ? (rows[i][4] === 'Yes') : (rows[i][3] === 'Yes')),
+        taskDate:      (sheetName === 'Tasks' && rows[i][4]) ? formatDate(rows[i][4]) : '',
+        startDate:     (sheetName === 'Tasks' && rows[i][5]) ? formatDate(rows[i][5]) : '',
+        deadline:      (sheetName === 'Tasks' && rows[i][6]) ? formatDate(rows[i][6]) : ''
       });
     }
   }
@@ -238,18 +267,24 @@ function jsonResponse(data) {
 function addItem(params) {
   var sheetName = params.type === 'Habit' ? 'Habits' : 'Tasks';
   var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sheetName);
+  var remindValue = (params.remind === 'true' || params.remind === true) ? 'Yes' : 'No';
   if (sheetName === 'Habits') {
     sheet.appendRow([
       params.name  || '',
       params.time  || '',
       params.place || '',
-      params.behaviorType || 'Good'
+      params.behaviorType || 'Good',
+      remindValue
     ]);
   } else {
     sheet.appendRow([
       params.name  || '',
       params.time  || '',
-      params.place || ''
+      params.place || '',
+      remindValue,
+      params.taskDate || '',
+      params.startDate || '',
+      params.deadline || ''
     ]);
   }
   return jsonResponse({ status: 'ok', message: 'Item added' });
@@ -274,4 +309,74 @@ function deleteItem(params) {
   }
 
   return jsonResponse({ error: 'Item not found in sheet: ' + params.name });
+}
+
+/**
+ * Save a reflection entry to the Reflections sheet.
+ * Server-side deduplication: skip if the same Key already exists.
+ * Key = date|type|name (e.g. "2025-07-13|Habit|Meditation")
+ * @param {Object} params — { key, date, type, name, status, strategy, failReason, betterPlan }
+ */
+function saveReflection(params) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName('Reflections');
+  if (!sheet) {
+    initializeSheetsIfNeeded();
+    sheet = ss.getSheetByName('Reflections');
+  }
+
+  var keyToInsert = params.key || ((params.date || '') + '|' + (params.type || '') + '|' + (params.name || ''));
+
+  // Dedup check: scan Column A (Key) for existing match
+  var lastRow = sheet.getLastRow();
+  if (lastRow > 1) {
+    var existingKeys = sheet.getRange(2, 1, lastRow - 1, 1).getValues();
+    for (var i = 0; i < existingKeys.length; i++) {
+      if (existingKeys[i][0] === keyToInsert) {
+        // Already exists — do not write again
+        return jsonResponse({ status: 'ok', message: 'Reflection already exists (dedup)' });
+      }
+    }
+  }
+
+  sheet.appendRow([
+    keyToInsert,
+    params.date       || '',
+    params.type       || '',
+    params.name       || '',
+    params.status     || '',
+    params.strategy   || '',
+    params.failReason || '',
+    params.betterPlan || ''
+  ]);
+
+  return jsonResponse({ status: 'ok', message: 'Reflection saved' });
+}
+
+/**
+ * Fetch all entries from the Reflections sheet.
+ * Returns: [{ key, date, type, name, status, strategy, failReason, betterPlan }]
+ */
+function getReflections() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName('Reflections');
+  if (!sheet || sheet.getLastRow() <= 1) {
+    return jsonResponse({ status: 'ok', data: [] });
+  }
+
+  var rows = sheet.getDataRange().getValues();
+  var reflections = [];
+  for (var i = 1; i < rows.length; i++) {
+    reflections.push({
+      key:        rows[i][0] ? rows[i][0].toString().trim() : '',
+      date:       rows[i][1] ? rows[i][1].toString().trim() : '',
+      type:       rows[i][2] ? rows[i][2].toString().trim() : '',
+      name:       rows[i][3] ? rows[i][3].toString().trim() : '',
+      status:     rows[i][4] ? rows[i][4].toString().trim() : '',
+      strategy:   rows[i][5] ? rows[i][5].toString().trim() : '',
+      failReason: rows[i][6] ? rows[i][6].toString().trim() : '',
+      betterPlan: rows[i][7] ? rows[i][7].toString().trim() : ''
+    });
+  }
+  return jsonResponse({ status: 'ok', data: reflections });
 }

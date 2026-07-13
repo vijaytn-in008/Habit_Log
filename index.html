@@ -23,6 +23,12 @@
   <header class="header container">
     <h1>Habits</h1>
     <div style="display: flex; gap: 8px; align-items: center;">
+      <div id="sync-indicator" class="sync-indicator sync-online" title="Online — Synced">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+          <polyline points="22 4 12 14.01 9 11.01"/>
+        </svg>
+      </div>
       <button id="install-btn" class="theme-toggle hidden" aria-label="Install App" title="Install App">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
           <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>
@@ -51,7 +57,7 @@
       </p>
       <input type="password" id="api-url-input" class="notes-field" style="min-height: 48px; margin-bottom: 20px;" placeholder="https://script.google.com/macros/s/.../exec">
       <button id="settings-save-btn" class="save-btn" style="margin-bottom: 12px;">Save Settings</button>
-      <button id="settings-reset-btn" class="save-btn" style="background: var(--danger); font-size: 0.9rem; padding: 12px;">Reset App & Clear Cache</button>
+      <button id="settings-reset-btn" class="save-btn" style="background: var(--danger); font-size: 0.9rem; padding: 12px;">Reset App &amp; Clear Cache</button>
     </div>
   </div>
 
@@ -84,7 +90,7 @@
       <input type="text" id="new-item-name" class="notes-field" style="min-height: 48px; margin-bottom: 16px;" placeholder="e.g. Read Book, Workout">
       
       <p class="reason-label">Scheduled Time (optional)</p>
-      <input type="text" id="new-item-time" class="notes-field" style="min-height: 48px; margin-bottom: 16px;" placeholder="e.g. 07:00 AM, Evening">
+      <input type="time" id="new-item-time" class="notes-field time-picker-field" style="min-height: 48px; margin-bottom: 16px;">
       
       <p class="reason-label">Place (optional)</p>
       <input type="text" id="new-item-place" class="notes-field" style="min-height: 48px; margin-bottom: 24px;" placeholder="e.g. Living Room, Bedroom">
@@ -153,9 +159,44 @@
         </button>
       </div>
 
+      <!-- Resist Section (shown for quit habits when Resisted) -->
+      <div id="resist-section" class="reason-section">
+        <p class="reason-label">💪 How did you resist?</p>
+        <p style="font-size: 0.78rem; color: var(--text-tertiary); margin-bottom: 12px;">Share what strategy helped you stay strong — this helps track what works for you.</p>
+        <textarea id="resist-notes" class="notes-field" placeholder="e.g. I went for a walk, called a friend, drank water instead, did deep breathing…" rows="3"></textarea>
+      </div>
+
+      <!-- Build Done Section (shown for build habits when Done) -->
+      <div id="build-done-section" class="reason-section">
+        <p class="reason-label" style="color: var(--success);">✓ How did you do this today?</p>
+        <p style="font-size: 0.78rem; color: var(--text-tertiary); margin-bottom: 12px;">Your own strategies — this gets analyzed to show what consistently works for you.</p>
+        <textarea id="build-done-notes" class="notes-field" placeholder="e.g. I did it right after waking up, I set a timer, I prepared the night before..." rows="3" style="margin-bottom: 0;"></textarea>
+      </div>
+
+      <!-- Build Fail Section (shown for build habits when Failed) -->
+      <div id="build-fail-section" class="reason-section">
+        <p class="reason-label" style="color: var(--danger);">⚠️ Why did you fail?</p>
+        <textarea id="build-fail-notes" class="notes-field" placeholder="e.g. I procrastinated, got distracted, didn't have my gear ready..." rows="2" style="margin-bottom: 12px;"></textarea>
+        
+        <p class="reason-label" style="color: var(--success);">🌱 How can you do better next time?</p>
+        <textarea id="build-better-notes" class="notes-field" placeholder="e.g. I will prepare my environment, set a smaller target, reduce friction..." rows="2" style="margin-bottom: 0;"></textarea>
+      </div>
+
+      <!-- Task Done Section (shown for tasks when Done) -->
+      <div id="task-done-section" class="reason-section">
+        <p class="reason-label" style="color: var(--success);">✓ How did you achieve this task?</p>
+        <textarea id="task-done-notes" class="notes-field" placeholder="e.g. I focused for 30 minutes, did it early in the morning, followed my plan..." rows="3" style="margin-bottom: 0;"></textarea>
+      </div>
+
+      <!-- Task Fail Section (shown for tasks when Failed) -->
+      <div id="task-fail-section" class="reason-section">
+        <p class="reason-label" style="color: var(--danger);">✗ Why did you fail this task?</p>
+        <textarea id="task-fail-notes" class="notes-field" placeholder="e.g. Unexpected workload came up, I underestimated the time needed, forgot..." rows="3" style="margin-bottom: 0;"></textarea>
+      </div>
+
       <!-- Reason Selection (shown for Failed / Skipped) -->
       <div id="reason-section" class="reason-section">
-        <p class="reason-label">What happened?</p>
+        <p class="reason-label" id="reason-section-label">What happened?</p>
         <div class="reason-chips">
           <button class="chip" data-reason="Phone">📱 Phone</button>
           <button class="chip" data-reason="Social Media">📲 Social Media</button>
@@ -165,6 +206,11 @@
           <button class="chip" data-reason="Unexpected Work">💼 Unexpected Work</button>
           <button class="chip" data-reason="No Time">⏰ No Time</button>
           <button class="chip" data-reason="Other">💬 Other</button>
+          <!-- Quit-specific chips (hidden by default, shown for Bad habits) -->
+          <button class="chip quit-chip hidden" data-reason="Stress">😰 Stress</button>
+          <button class="chip quit-chip hidden" data-reason="Boredom">😑 Boredom</button>
+          <button class="chip quit-chip hidden" data-reason="Peer Pressure">👥 Peer Pressure</button>
+          <button class="chip quit-chip hidden" data-reason="Craving">🔥 Craving</button>
         </div>
       </div>
 
@@ -205,6 +251,8 @@
   </nav>
 
   <!-- ====== Scripts ====== -->
+  <script src="db.js"></script>
+  <script src="sync.js"></script>
   <script src="script.js"></script>
   <script>
     // Initialize the Habits page

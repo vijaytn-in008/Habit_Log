@@ -31,6 +31,12 @@
         </svg>
         Refresh
       </button>
+      <div id="sync-indicator" class="sync-indicator sync-online" title="Online — Synced">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+          <polyline points="22 4 12 14.01 9 11.01"/>
+        </svg>
+      </div>
       <button id="install-btn" class="theme-toggle hidden" aria-label="Install App" title="Install App">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
           <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>
@@ -59,7 +65,7 @@
       </p>
       <input type="password" id="api-url-input" class="notes-field" style="min-height: 48px; margin-bottom: 20px;" placeholder="https://script.google.com/macros/s/.../exec">
       <button id="settings-save-btn" class="save-btn" style="margin-bottom: 12px;">Save Settings</button>
-      <button id="settings-reset-btn" class="save-btn" style="background: var(--danger); font-size: 0.9rem; padding: 12px;">Reset App & Clear Cache</button>
+      <button id="settings-reset-btn" class="save-btn" style="background: var(--danger); font-size: 0.9rem; padding: 12px;">Reset App &amp; Clear Cache</button>
     </div>
   </div>
 
@@ -69,6 +75,14 @@
       <div class="loading-spinner"></div>
       <p>Analyzing your data…</p>
     </div>
+
+    <!-- Filter Bar -->
+    <div id="filter-bar" class="filter-bar hidden">
+      <div class="filter-scroll">
+        <button class="filter-chip active" data-filter="all">All</button>
+      </div>
+    </div>
+
     <div id="insights" class="insight-list"></div>
   </main>
 
@@ -100,28 +114,199 @@
   </nav>
 
   <!-- ====== Scripts ====== -->
+  <script src="db.js"></script>
+  <script src="sync.js"></script>
   <script src="script.js"></script>
   <script src="analysis.js"></script>
   <script>
+    // Cached data for filter switching
+    let _cachedLogs        = [];
+    let _cachedHabits      = [];
+    let _cachedTasks       = [];
+    let _cachedReflections = [];
+    let _activeFilter = 'all';
+
     /**
-     * Fetch logs from Google Sheets, generate insights,
-     * and render them as cards.
+     * Fetch logs from IndexedDB (offline-first), generate insights,
+     * build filter bar, and render cards.
      */
     async function initReflectionPage() {
       const loading  = document.getElementById('loading');
       const container = document.getElementById('insights');
+      const filterBar = document.getElementById('filter-bar');
 
       try {
-        const data = await fetchLogs();
-        const logs = data.data || data;
-        const insights = generateInsights(logs);
+        // Initialize IndexedDB
+        await dbInit();
 
+        // Check if we need to restore from Sheets
+        const hasData = await dbHasData();
+        if (!hasData && navigator.onLine && API_URL) {
+          loading.innerHTML = '<div class="loading-spinner"></div><p>Restoring data from cloud…</p>';
+          await restoreFromSheets();
+        }
+
+        // Load logs, habits, tasks, and reflections from IndexedDB
+        _cachedLogs        = await dbGetAllLogs();
+        _cachedHabits      = await dbGetAllHabits();
+        _cachedTasks       = await dbGetAllTasks();
+        _cachedReflections = await dbGetAllReflections();
+
+        if (_cachedLogs.length === 0 && navigator.onLine && API_URL) {
+          // Fallback: try fetching directly from API if IndexedDB is empty
+          try {
+            const data = await fetchLogs();
+            const apiLogs = data.data || data;
+            if (Array.isArray(apiLogs) && apiLogs.length > 0) {
+              await dbBulkPutLogs(apiLogs);
+              _cachedLogs = apiLogs;
+            }
+          } catch (fetchErr) {
+            console.warn('Could not fetch logs from API:', fetchErr);
+          }
+        }
+
+        // Build filter bar from unique names in logs + reflections
+        buildFilterBar(_cachedLogs, _cachedHabits, _cachedTasks);
+
+        // Render insights for active filter
         loading.classList.add('hidden');
-        renderInsights(insights, container);
+        applyFilter(_activeFilter);
+
+        // Background sync
+        if (navigator.onLine && API_URL) {
+          syncToSheets();
+        }
       } catch (err) {
         loading.innerHTML = '<p>Could not load data.<br>Check your connection.</p>';
         console.error(err);
       }
+    }
+
+    /**
+     * Build the filter bar chips from habit and task names.
+     */
+    function buildFilterBar(logs, habits, tasks) {
+      const filterBar = document.getElementById('filter-bar');
+      const scrollContainer = filterBar.querySelector('.filter-scroll');
+      if (!scrollContainer) return;
+
+      // Get unique habit names from logs
+      const habitNames = [...new Set(
+        logs
+          .filter((l) => l.type === 'Habit')
+          .map((l) => l.name)
+      )];
+
+      // Also include habits from the habits list that may not have logs yet
+      habits.forEach((h) => {
+        if (!habitNames.includes(h.name)) {
+          habitNames.push(h.name);
+        }
+      });
+
+      // Get unique task names from logs
+      const taskNames = [...new Set(
+        logs
+          .filter((l) => l.type === 'Task')
+          .map((l) => l.name)
+      )];
+
+      // Also include tasks from the tasks list that may not have logs yet
+      tasks.forEach((t) => {
+        if (!taskNames.includes(t.name)) {
+          taskNames.push(t.name);
+        }
+      });
+
+      if (habitNames.length === 0 && taskNames.length === 0) {
+        filterBar.classList.add('hidden');
+        return;
+      }
+
+      // Clear existing chips (except "All")
+      scrollContainer.innerHTML = '<button class="filter-chip active" data-filter="all">All</button>';
+
+      // Add habit chips
+      habitNames.forEach((name) => {
+        const chip = document.createElement('button');
+        chip.className = 'filter-chip';
+        chip.dataset.filter = name;
+
+        // Add a visual indicator for habits (quit vs build)
+        const habitItem = habits.find((h) => h.name === name);
+        if (habitItem && habitItem.behaviorType === 'Bad') {
+          chip.innerHTML = `<span style="color: var(--danger); margin-right: 2px;">🔴</span> ${name}`;
+        } else {
+          chip.innerHTML = `<span style="color: var(--success); margin-right: 2px;">🟢</span> ${name}`;
+        }
+
+        scrollContainer.appendChild(chip);
+      });
+
+      // Add task chips
+      taskNames.forEach((name) => {
+        const chip = document.createElement('button');
+        chip.className = 'filter-chip';
+        chip.dataset.filter = name;
+        chip.innerHTML = `<span style="color: var(--accent); margin-right: 2px;">📋</span> ${name}`;
+
+        scrollContainer.appendChild(chip);
+      });
+
+      // Show filter bar
+      filterBar.classList.remove('hidden');
+
+      // Attach click listeners
+      scrollContainer.querySelectorAll('.filter-chip').forEach((chip) => {
+        chip.addEventListener('click', () => {
+          scrollContainer.querySelectorAll('.filter-chip').forEach((c) => c.classList.remove('active'));
+          chip.classList.add('active');
+          _activeFilter = chip.dataset.filter;
+          applyFilter(_activeFilter);
+        });
+      });
+    }
+
+    /**
+     * Apply a filter and render the appropriate insights.
+     * For per-item views, blends log-based analysis + reflection-based strategies.
+     */
+    function applyFilter(filter) {
+      const container = document.getElementById('insights');
+      let insights;
+
+      if (filter === 'all') {
+        insights = generateInsights(_cachedLogs);
+
+        // Also show overall reflection stats if reflections exist
+        if (_cachedReflections && _cachedReflections.length > 0) {
+          const reflInsights = generateInsightsFromReflections(_cachedReflections, null);
+          if (reflInsights.length > 0) {
+            insights = insights.concat(reflInsights);
+          }
+        }
+      } else {
+        // Per-item deep dive
+        insights = generateHabitInsights(_cachedLogs, filter, _cachedHabits);
+
+        // Enrich with reflection-based insights (structured strategies & fail reasons)
+        if (_cachedReflections && _cachedReflections.length > 0) {
+          const reflInsights = generateInsightsFromReflections(_cachedReflections, filter);
+          if (reflInsights.length > 0) {
+            // Add a divider header card, then the reflection insights
+            insights.push({
+              title: '📝 Reflection Strategies',
+              text: 'Based on what you wrote when logging this item.',
+              tone: 'neutral',
+              _isDivider: true
+            });
+            insights = insights.concat(reflInsights);
+          }
+        }
+      }
+
+      renderInsights(insights, container);
     }
 
     /**
@@ -156,9 +341,18 @@
 
     // Refresh button
     document.addEventListener('DOMContentLoaded', () => {
-      document.getElementById('refresh-btn').addEventListener('click', () => {
+      document.getElementById('refresh-btn').addEventListener('click', async () => {
         document.getElementById('loading').classList.remove('hidden');
         document.getElementById('insights').innerHTML = '';
+
+        // On refresh, try to re-sync from Sheets if online
+        if (navigator.onLine && API_URL) {
+          try {
+            await restoreFromSheets();
+          } catch (e) {
+            console.warn('Refresh sync failed:', e);
+          }
+        }
         initReflectionPage();
       });
     });
