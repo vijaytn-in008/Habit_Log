@@ -180,7 +180,8 @@ async function syncToSheets() {
           status:     refl.status,
           strategy:   refl.strategy   || '',
           failReason: refl.failReason  || '',
-          betterPlan: refl.betterPlan  || ''
+          betterPlan: refl.betterPlan  || '',
+          engagedActivity: refl.engagedActivity || ''
         }).toString();
         const response = await fetch(`${API_URL}?${query}`);
         const data     = await response.json();
@@ -197,8 +198,50 @@ async function syncToSheets() {
     console.error('Reflection sync read error:', err);
   }
 
-  if (synced > 0 || reflSynced > 0) {
-    console.log(`Sync complete: ${synced} logs, ${reflSynced} reflections synced, ${failed} failed`);
+  // ---- 3. Push Today's Plan ----------------------------------------
+  let planSynced = 0;
+  try {
+    if (typeof dbGetAllPlanItems === 'function') {
+      const allPlans = await dbGetAllPlanItems();
+      const unsyncedPlans = allPlans.filter(p => !p.synced);
+      for (const plan of unsyncedPlans) {
+        try {
+          const query = new URLSearchParams({
+            action: 'savePlanItem',
+            id: plan.id,
+            targetName: plan.targetName,
+            targetType: plan.targetType,
+            date: plan.date,
+            originalStartTime: plan.originalStartTime || '',
+            originalEndTime: plan.originalEndTime || '',
+            currentStartTime: plan.currentStartTime || '',
+            currentEndTime: plan.currentEndTime || '',
+            status: plan.status,
+            completionType: plan.completionType || '',
+            rescheduleCount: plan.rescheduleCount || 0,
+            createdAt: plan.createdAt || '',
+            completedAt: plan.completedAt || '',
+            changeLog: JSON.stringify(plan.changeLog || [])
+          }).toString();
+          const response = await fetch(`${API_URL}?${query}`);
+          const data = await response.json();
+          if (data && !data.error) {
+            plan.synced = true;
+            await dbPutPlanItem(plan);
+            planSynced++;
+          }
+        } catch (err) {
+          console.warn('Plan sync error:', err);
+          if (!navigator.onLine) break;
+        }
+      }
+    }
+  } catch (err) {
+    console.error('Plan sync read error:', err);
+  }
+
+  if (synced > 0 || reflSynced > 0 || planSynced > 0) {
+    console.log(`Sync complete: ${synced} logs, ${reflSynced} reflections, ${planSynced} plan items synced, ${failed} failed`);
     await dbSetMeta('lastSyncTimestamp', Date.now());
   }
 
@@ -221,28 +264,31 @@ async function restoreFromSheets() {
   updateSyncIndicator('syncing');
 
   try {
-    // Fetch all four data sets in parallel
-    const [habitsRes, tasksRes, logsRes, reflRes] = await Promise.all([
+    // Fetch all five data sets in parallel
+    const [habitsRes, tasksRes, logsRes, reflRes, planRes] = await Promise.all([
       fetch(`${API_URL}?action=getHabits`).then(r => r.json()),
       fetch(`${API_URL}?action=getTasks`).then(r => r.json()),
       fetch(`${API_URL}?action=getLogs`).then(r => r.json()),
-      fetch(`${API_URL}?action=getReflections`).then(r => r.json())
+      fetch(`${API_URL}?action=getReflections`).then(r => r.json()),
+      fetch(`${API_URL}?action=getPlanItems`).then(r => r.json())
     ]);
 
     const habits      = (habitsRes.data || habitsRes || []);
     const tasks       = (tasksRes.data  || tasksRes  || []);
     const logs        = (logsRes.data   || logsRes   || []);
     const reflections = (reflRes.data   || []);
+    const planItems   = (planRes.data   || []);
 
     // Bulk write to IndexedDB
     if (Array.isArray(habits)      && habits.length      > 0) await dbBulkPutHabits(habits);
     if (Array.isArray(tasks)       && tasks.length       > 0) await dbBulkPutTasks(tasks);
     if (Array.isArray(logs)        && logs.length        > 0) await dbBulkPutLogs(logs);
     if (Array.isArray(reflections) && reflections.length > 0) await dbBulkPutReflections(reflections);
+    if (Array.isArray(planItems)   && planItems.length   > 0 && typeof dbBulkPutPlanItems === 'function') await dbBulkPutPlanItems(planItems);
 
     await dbSetMeta('lastSyncTimestamp', Date.now());
     updateSyncIndicator('online');
-    console.log(`Restore complete: ${habits.length} habits, ${tasks.length} tasks, ${logs.length} logs, ${reflections.length} reflections`);
+    console.log(`Restore complete: ${habits.length} habits, ${tasks.length} tasks, ${logs.length} logs, ${reflections.length} reflections, ${planItems.length} plan items`);
     return true;
   } catch (err) {
     console.error('Restore from Sheets failed:', err);
@@ -263,7 +309,7 @@ window.addEventListener('online', async () => {
   // First sync any queued changes
   const result = await syncToSheets();
   if (result.synced > 0 && typeof showToast === 'function') {
-    showToast(`${result.synced} change${result.synced > 1 ? 's' : ''} synced to Sheets ✓`);
+    showToast(`${result.synced} change${result.synced > 1 ? 's' : ''} synced to Sheets`);
   }
   updateSyncIndicator('online');
 });

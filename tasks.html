@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>Tasks — Behavior Log</title>
-  <meta name="description" content="Log your daily tasks and discover behavioral patterns.">
+  <title>Tasks — PivotMe</title>
+  <meta name="description" content="Manage and execute your key tasks with PivotMe.">
 
   <!-- PWA -->
   <link rel="manifest" href="manifest.json">
@@ -50,13 +50,35 @@
       <div class="modal-handle"></div>
       <div class="modal-header">
         <h2>Backend Settings</h2>
-        <button id="settings-close" class="modal-close" aria-label="Close">✕</button>
+        <button id="settings-close" class="modal-close" aria-label="Close">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
       </div>
       <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 16px;">
         Paste your Google Apps Script Web App URL below. This is stored securely in your local browser only.
       </p>
       <input type="password" id="api-url-input" class="notes-field" style="min-height: 48px; margin-bottom: 20px;" placeholder="https://script.google.com/macros/s/.../exec">
       <button id="settings-save-btn" class="save-btn" style="margin-bottom: 12px;">Save Settings</button>
+
+      <!-- Help & Guides Section in Settings -->
+      <div style="margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--separator); margin-bottom: 16px;">
+        <h3 style="font-size: 0.92rem; font-weight: 700; color: var(--text); margin-bottom: 4px;">Help &amp; Guides</h3>
+        <p style="font-size: 0.8rem; color: var(--text-tertiary); margin-bottom: 12px;">
+          Learn the PivotMe behavioral loop, how Plan works, and setup instructions.
+        </p>
+        <a href="help.html" class="save-btn" style="display: flex; align-items: center; justify-content: center; gap: 8px; text-decoration: none; background: var(--surface-hover); color: var(--text); border: 1px solid var(--separator); font-size: 0.88rem; padding: 10px 16px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+            <line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+          <span>Open Help</span>
+        </a>
+      </div>
+
       <button id="settings-reset-btn" class="save-btn" style="background: var(--danger); font-size: 0.9rem; padding: 12px;">Reset App &amp; Clear Cache</button>
     </div>
   </div>
@@ -68,8 +90,9 @@
       <p>Loading tasks…</p>
     </div>
     
-    <div style="display: flex; justify-content: flex-end; padding: 10px 0;">
-      <button id="add-item-trigger-btn" class="refresh-btn" style="border-radius: 12px; padding: 10px 16px; font-weight: 600;">
+    <div class="page-action-bar">
+      <div></div>
+      <button id="add-item-trigger-btn" class="refresh-btn" style="border-radius: var(--radius-xs); padding: 10px 18px; font-weight: 600;">
         + Add Task
       </button>
     </div>
@@ -83,22 +106,41 @@
       <div class="modal-handle"></div>
       <div class="modal-header">
         <h2 id="add-modal-title">Create Task</h2>
-        <button id="add-modal-close" class="modal-close" aria-label="Close">✕</button>
+        <button id="add-modal-close" class="modal-close" aria-label="Close">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
       </div>
-      
+
       <p class="reason-label">Name</p>
-      <input type="text" id="new-item-name" class="notes-field" style="min-height: 48px; margin-bottom: 16px;" placeholder="e.g. Clean Room, Pay Bills">
-      
-      <p class="reason-label">Scheduled Time (optional)</p>
-      <input type="time" id="new-item-time" class="notes-field time-picker-field" style="min-height: 48px; margin-bottom: 16px;">
-      
-      <p class="reason-label">Place (optional)</p>
-      <input type="text" id="new-item-place" class="notes-field" style="min-height: 48px; margin-bottom: 16px;" placeholder="e.g. Home, Office">
+      <input type="text" id="new-item-name" class="notes-field" style="min-height: 48px; margin-bottom: 16px;" placeholder="e.g. Build payment system, Quarterly report">
 
-      <p class="reason-label">Task Date (optional)</p>
-      <input type="date" id="new-item-task-date" class="notes-field time-picker-field" style="min-height: 48px; margin-bottom: 16px;">
+      <p class="reason-label">Priority</p>
+      <select id="new-item-priority" class="priority-select">
+        <option value="">No Priority</option>
+        <option value="Important & To Do">Important &amp; To Do</option>
+        <option value="To Do">To Do</option>
+        <option value="Optional">Optional</option>
+        <option value="Don't Do">Don't Do</option>
+      </select>
 
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 24px;">
+      <p class="reason-label">Objective (optional)</p>
+      <input type="text" id="new-item-objective" class="notes-field" style="min-height: 48px; margin-bottom: 16px;" placeholder="Intended outcome or why this matters">
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px;">
+        <div>
+          <p class="reason-label">Scheduled Time (optional)</p>
+          <input type="time" id="new-item-time" class="notes-field time-picker-field" style="min-height: 48px; margin-bottom: 0;">
+        </div>
+        <div>
+          <p class="reason-label">Place (optional)</p>
+          <input type="text" id="new-item-place" class="notes-field" style="min-height: 48px; margin-bottom: 0;" placeholder="e.g. Home, Office">
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px;">
         <div>
           <p class="reason-label">Start Date (optional)</p>
           <input type="date" id="new-item-start-date" class="notes-field time-picker-field" style="min-height: 48px; margin-bottom: 0;">
@@ -109,9 +151,25 @@
         </div>
       </div>
 
-      <label style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: var(--text-secondary); cursor: pointer; margin-bottom: 24px;">
+      <p class="reason-label">Repeats (optional)</p>
+      <div id="new-item-recurrence" class="filter-presets" style="margin-bottom: 16px;">
+        <button type="button" class="filter-preset-btn weekday-btn" data-day="0">Su</button>
+        <button type="button" class="filter-preset-btn weekday-btn" data-day="1">Mo</button>
+        <button type="button" class="filter-preset-btn weekday-btn" data-day="2">Tu</button>
+        <button type="button" class="filter-preset-btn weekday-btn" data-day="3">We</button>
+        <button type="button" class="filter-preset-btn weekday-btn" data-day="4">Th</button>
+        <button type="button" class="filter-preset-btn weekday-btn" data-day="5">Fr</button>
+        <button type="button" class="filter-preset-btn weekday-btn" data-day="6">Sa</button>
+      </div>
+
+      <label style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: var(--text-secondary); cursor: pointer; margin-bottom: 12px;">
         <input type="checkbox" id="new-item-remind" checked style="width: 16px; height: 16px; accent-color: var(--accent);">
         Enable Reminder Notification
+      </label>
+
+      <label style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: var(--text-secondary); cursor: pointer; margin-bottom: 24px;">
+        <input type="checkbox" id="new-item-remove-after-completion" style="width: 16px; height: 16px; accent-color: var(--accent);">
+        Remove after completion
       </label>
 
       <button id="add-item-save-btn" class="save-btn">Create Task</button>
@@ -126,108 +184,296 @@
       <div class="modal-header">
         <div>
           <h2 id="modal-title">Task Name</h2>
-          <span id="modal-badge" class="card-meta" style="color: var(--accent); font-weight: 600; text-transform: uppercase; font-size: 0.72rem; margin-top: 4px; display: inline-block;"></span>
+          <span id="modal-badge" class="card-meta" style="color: var(--accent); font-weight: 600; text-transform: uppercase; font-size: 0.72rem; margin-top: 4px; display: inline-block;">Task</span>
         </div>
-        <button id="modal-close" class="modal-close" aria-label="Close">✕</button>
-      </div>
-
-      <!-- Custom Date & Time Fields (Back-dating) -->
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px;">
-        <div>
-          <p class="reason-label" style="margin-bottom: 6px;">Date</p>
-          <input type="date" id="log-date" class="notes-field" style="min-height: 44px; margin-bottom: 0; padding: 8px 12px; font-size: 0.85rem;">
-        </div>
-        <div>
-          <p class="reason-label" style="margin-bottom: 6px;">Time</p>
-          <input type="time" id="log-time" class="notes-field" style="min-height: 44px; margin-bottom: 0; padding: 8px 12px; font-size: 0.85rem;">
-        </div>
-      </div>
-
-      <!-- Reminder Toggle -->
-      <div id="log-remind-wrapper" style="margin-bottom: 20px;">
-        <label style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: var(--text-secondary); cursor: pointer;">
-          <input type="checkbox" id="log-remind-checkbox" style="width: 16px; height: 16px; accent-color: var(--accent);">
-          Remind me at scheduled time
-        </label>
+        <button id="modal-close" class="modal-close" aria-label="Close">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
       </div>
 
       <!-- Status Selection -->
       <div class="status-group">
         <button class="status-btn" data-status="Done" id="status-btn-done">
-          <span class="status-icon">✓</span>
+          <span class="status-icon">
+            <svg class="status-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+          </span>
           <span id="status-text-done">Done</span>
+          <span class="status-subtext" id="status-sub-done">Completed</span>
         </button>
-        <button class="status-btn" data-status="Failed" id="status-btn-failed">
-          <span class="status-icon">✗</span>
-          <span id="status-text-failed">Failed</span>
+        <button class="status-btn" data-status="Partially Done" id="status-btn-partial">
+          <span class="status-icon">
+            <svg class="status-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="9"/>
+              <path d="M12 3a9 9 0 0 0 0 18z" fill="currentColor"/>
+            </svg>
+          </span>
+          <span id="status-text-partial">Partially Done</span>
+          <span class="status-subtext" id="status-sub-partial">Some progress</span>
         </button>
         <button class="status-btn" data-status="Skipped" id="status-btn-skipped">
-          <span class="status-icon">○</span>
+          <span class="status-icon">
+            <svg class="status-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="9"/>
+              <line x1="5.6" y1="5.6" x2="18.4" y2="18.4"/>
+            </svg>
+          </span>
           <span id="status-text-skipped">Skipped</span>
+          <span class="status-subtext" id="status-sub-skipped">Did other activity</span>
         </button>
       </div>
 
-      <!-- Resist Section (shown for quit habits when Resisted) -->
-      <div id="resist-section" class="reason-section">
-        <p class="reason-label">💪 How did you resist?</p>
-        <p style="font-size: 0.78rem; color: var(--text-tertiary); margin-bottom: 12px;">Share what strategy helped you stay strong — this helps track what works for you.</p>
-        <textarea id="resist-notes" class="notes-field" placeholder="e.g. I went for a walk, called a friend, drank water instead, did deep breathing…" rows="3"></textarea>
+      <!-- Quick Save Tip -->
+      <div id="quick-log-tip" class="quick-log-tip" style="display: none;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="20 6 9 17 4 12"/>
+        </svg>
+        <span id="quick-log-tip-text">Ready to save! Tap 'Save Log' below, or add context.</span>
       </div>
 
-      <!-- Build Done Section (shown for build habits when Done) -->
-      <div id="build-done-section" class="reason-section">
-        <p class="reason-label" style="color: var(--success);">✓ How did you do this today?</p>
-        <p style="font-size: 0.78rem; color: var(--text-tertiary); margin-bottom: 12px;">Your own strategies — this gets analyzed to show what consistently works for you.</p>
-        <textarea id="build-done-notes" class="notes-field" placeholder="e.g. I did it right after waking up, I set a timer, I prepared the night before..." rows="3" style="margin-bottom: 0;"></textarea>
-      </div>
+      <!-- ===== DONE Section ===== -->
+      <div id="done-section" class="reason-section">
+        <div id="done-task-fields">
+          <p class="reason-label">What did you complete?</p>
+          <input type="text" id="log-done-completed" class="notes-field" style="min-height: 44px; margin-bottom: 14px;" placeholder="e.g. Finished presentation slides">
+          <div class="suggestion-chips" id="suggest-done-completed"></div>
 
-      <!-- Build Fail Section (shown for build habits when Failed) -->
-      <div id="build-fail-section" class="reason-section">
-        <p class="reason-label" style="color: var(--danger);">⚠️ Why did you fail?</p>
-        <textarea id="build-fail-notes" class="notes-field" placeholder="e.g. I procrastinated, got distracted, didn't have my gear ready..." rows="2" style="margin-bottom: 12px;"></textarea>
-        
-        <p class="reason-label" style="color: var(--success);">🌱 How can you do better next time?</p>
-        <textarea id="build-better-notes" class="notes-field" placeholder="e.g. I will prepare my environment, set a smaller target, reduce friction..." rows="2" style="margin-bottom: 0;"></textarea>
-      </div>
+          <p class="reason-label">What did you do before?</p>
+          <input type="text" id="log-done-before" class="notes-field" style="min-height: 44px; margin-bottom: 14px;" placeholder="e.g. Gathered project metrics">
+          <div class="suggestion-chips" id="suggest-done-before"></div>
 
-      <!-- Task Done Section (shown for tasks when Done) -->
-      <div id="task-done-section" class="reason-section">
-        <p class="reason-label" style="color: var(--success);">✓ How did you achieve this task?</p>
-        <textarea id="task-done-notes" class="notes-field" placeholder="e.g. I focused for 30 minutes, did it early in the morning, followed my plan..." rows="3" style="margin-bottom: 0;"></textarea>
-      </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px;">
+            <div>
+              <p class="reason-label">Physical state</p>
+              <input type="text" id="log-done-physical" class="notes-field" style="min-height: 44px; margin-bottom: 0;" placeholder="e.g. Energetic, Normal">
+            </div>
+            <div>
+              <p class="reason-label">Mental state</p>
+              <input type="text" id="log-done-mental" class="notes-field" style="min-height: 44px; margin-bottom: 0;" placeholder="e.g. Focused, Calm">
+            </div>
+          </div>
 
-      <!-- Task Fail Section (shown for tasks when Failed) -->
-      <div id="task-fail-section" class="reason-section">
-        <p class="reason-label" style="color: var(--danger);">✗ Why did you fail this task?</p>
-        <textarea id="task-fail-notes" class="notes-field" placeholder="e.g. Unexpected workload came up, I underestimated the time needed, forgot..." rows="3" style="margin-bottom: 0;"></textarea>
-      </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px;">
+            <div>
+              <p class="reason-label">Start time</p>
+              <input type="time" id="log-done-time" class="notes-field time-picker-field" style="min-height: 44px; margin-bottom: 0;">
+            </div>
+            <div>
+              <p class="reason-label">End time</p>
+              <input type="time" id="log-done-endtime" class="notes-field time-picker-field" style="min-height: 44px; margin-bottom: 0;">
+            </div>
+          </div>
+        </div>
 
-      <!-- Reason Selection (shown for Failed / Skipped) -->
-      <div id="reason-section" class="reason-section">
-        <p class="reason-label" id="reason-section-label">What happened?</p>
-        <div class="reason-chips">
-          <button class="chip" data-reason="Phone">📱 Phone</button>
-          <button class="chip" data-reason="Social Media">📲 Social Media</button>
-          <button class="chip" data-reason="Too Tired">😴 Too Tired</button>
-          <button class="chip" data-reason="No Motivation">😐 No Motivation</button>
-          <button class="chip" data-reason="Forgot">🤔 Forgot</button>
-          <button class="chip" data-reason="Unexpected Work">💼 Unexpected Work</button>
-          <button class="chip" data-reason="No Time">⏰ No Time</button>
-          <button class="chip" data-reason="Other">💬 Other</button>
+        <button type="button" class="optional-toggle" id="done-optional-toggle">▸ Optional details (Place, Date)</button>
+        <div id="done-optional-fields" class="optional-fields">
+          <p class="reason-label" style="margin-bottom: 6px;">Place</p>
+          <input type="text" id="log-done-place" class="notes-field" style="min-height: 44px; margin-bottom: 12px;" placeholder="e.g. Home, Office">
+          <div class="suggestion-chips" id="suggest-done-place"></div>
+
+          <p class="reason-label" style="margin-bottom: 6px;">Date</p>
+          <input type="date" id="log-done-date" class="notes-field time-picker-field" style="min-height: 44px; margin-bottom: 0; padding: 8px 12px; font-size: 0.85rem;">
         </div>
       </div>
 
-      <!-- Notes -->
-      <textarea id="notes" class="notes-field" placeholder="Notes (optional)" rows="3"></textarea>
+      <!-- ===== PARTIALLY DONE Section ===== -->
+      <div id="partial-section" class="reason-section">
+        <div id="partial-task-fields">
+          <p class="reason-label">What did you complete?</p>
+          <input type="text" id="log-partial-completed" class="notes-field" style="min-height: 44px; margin-bottom: 14px;" placeholder="e.g. Created first draft">
+          <div class="suggestion-chips" id="suggest-partial-completed"></div>
+
+          <p class="reason-label">What remains?</p>
+          <input type="text" id="log-partial-remaining" class="notes-field" style="min-height: 44px; margin-bottom: 14px;" placeholder="e.g. Review and export">
+          <div class="suggestion-chips" id="suggest-partial-remaining"></div>
+
+          <p class="reason-label">What did you do before?</p>
+          <input type="text" id="log-partial-before" class="notes-field" style="min-height: 44px; margin-bottom: 14px;" placeholder="e.g. Checked team messages">
+          <div class="suggestion-chips" id="suggest-partial-before"></div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px;">
+            <div>
+              <p class="reason-label">Physical state</p>
+              <input type="text" id="log-partial-physical" class="notes-field" style="min-height: 44px; margin-bottom: 0;" placeholder="e.g. Tired, Normal">
+            </div>
+            <div>
+              <p class="reason-label">Mental state</p>
+              <input type="text" id="log-partial-mental" class="notes-field" style="min-height: 44px; margin-bottom: 0;" placeholder="e.g. Distracted, Rushed">
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px;">
+            <div>
+              <p class="reason-label">Start time</p>
+              <input type="time" id="log-partial-time" class="notes-field time-picker-field" style="min-height: 44px; margin-bottom: 0;">
+            </div>
+            <div>
+              <p class="reason-label">Duration (minutes)</p>
+              <input type="number" id="log-duration" min="0" placeholder="e.g. 25" class="notes-field" style="min-height: 44px; margin-bottom: 0;">
+            </div>
+          </div>
+        </div>
+
+        <button type="button" class="optional-toggle" id="partial-optional-toggle">▸ Optional details (Place, Date)</button>
+        <div id="partial-optional-fields" class="optional-fields">
+          <p class="reason-label" style="margin-bottom: 6px;">Place</p>
+          <input type="text" id="log-partial-place" class="notes-field" style="min-height: 44px; margin-bottom: 12px;" placeholder="e.g. Home, Office">
+          <div class="suggestion-chips" id="suggest-partial-place"></div>
+
+          <p class="reason-label" style="margin-bottom: 6px;">Date</p>
+          <input type="date" id="log-partial-date" class="notes-field time-picker-field" style="min-height: 44px; margin-bottom: 0; padding: 8px 12px; font-size: 0.85rem;">
+        </div>
+
+        <!-- Integrated Deadline Extension for Partially Done -->
+        <div class="deadline-extension-card" style="margin-top: 16px; padding: 12px 14px; background: var(--surface-hover); border-radius: var(--radius-xs); border: 1px solid var(--separator);">
+          <label style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; font-weight: 600; color: var(--accent); cursor: pointer; margin-bottom: 8px;">
+            <input type="checkbox" id="log-partial-extend-toggle" style="width: 16px; height: 16px; accent-color: var(--accent);">
+            Extend deadline
+          </label>
+          <div id="log-partial-extend-fields" style="display: none; padding-top: 6px;">
+            <p class="reason-label" style="margin-bottom: 4px; font-size: 0.8rem;">New Deadline</p>
+            <input type="date" id="log-partial-extend-date" class="notes-field time-picker-field" style="min-height: 42px; margin-bottom: 10px; font-size: 0.85rem;">
+            <p class="reason-label" style="margin-bottom: 4px; font-size: 0.8rem; color: var(--text-tertiary);">Reason for extension (optional)</p>
+            <input type="text" id="log-partial-extend-reason" class="notes-field" placeholder="e.g. Needs more time, blocked on review" style="min-height: 42px; margin-bottom: 0; font-size: 0.85rem;">
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== SKIPPED Section ===== -->
+      <div id="skipped-section" class="reason-section">
+        <div>
+          <p class="reason-label">What did you do instead?</p>
+          <input type="text" id="log-alternative-activity" class="notes-field" style="min-height: 44px; margin-bottom: 14px;" placeholder="e.g. Handled emergency, unexpected meeting...">
+          <div class="suggestion-chips" id="suggest-alternative-activity"></div>
+
+          <p class="reason-label">What did you do before?</p>
+          <input type="text" id="log-skipped-before" class="notes-field" style="min-height: 44px; margin-bottom: 14px;" placeholder="e.g. Checked email, answered calls">
+          <div class="suggestion-chips" id="suggest-skipped-before"></div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px;">
+            <div>
+              <p class="reason-label">Physical state</p>
+              <input type="text" id="log-skipped-physical" class="notes-field" style="min-height: 44px; margin-bottom: 0;" placeholder="e.g. Exhausted, Normal">
+            </div>
+            <div>
+              <p class="reason-label">Mental state</p>
+              <input type="text" id="log-skipped-mental" class="notes-field" style="min-height: 44px; margin-bottom: 0;" placeholder="e.g. Overwhelmed, Stressed">
+            </div>
+          </div>
+        </div>
+
+        <button type="button" class="optional-toggle" id="skipped-optional-toggle">▸ Optional details (When, Place)</button>
+        <div id="skipped-optional-fields" class="optional-fields">
+          <p class="reason-label" style="margin-bottom: 6px;">When did this happen?</p>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
+            <input type="date" id="log-skipped-date" class="notes-field time-picker-field" style="min-height: 44px; margin-bottom: 0; padding: 8px 12px; font-size: 0.85rem;">
+            <input type="time" id="log-skipped-time" class="notes-field time-picker-field" style="min-height: 44px; margin-bottom: 0; padding: 8px 12px; font-size: 0.85rem;">
+          </div>
+          <p class="reason-label" style="margin-bottom: 6px;">Place (optional)</p>
+          <input type="text" id="log-skipped-place" class="notes-field" style="min-height: 44px; margin-bottom: 0;" placeholder="e.g. Home, Office">
+        </div>
+
+        <!-- Integrated Deadline Extension for Skipped -->
+        <div class="deadline-extension-card" style="margin-top: 16px; padding: 12px 14px; background: var(--surface-hover); border-radius: var(--radius-xs); border: 1px solid var(--separator);">
+          <label style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; font-weight: 600; color: var(--accent); cursor: pointer; margin-bottom: 8px;">
+            <input type="checkbox" id="log-skipped-extend-toggle" style="width: 16px; height: 16px; accent-color: var(--accent);">
+            Extend deadline
+          </label>
+          <div id="log-skipped-extend-fields" style="display: none; padding-top: 6px;">
+            <p class="reason-label" style="margin-bottom: 4px; font-size: 0.8rem;">New Deadline</p>
+            <input type="date" id="log-skipped-extend-date" class="notes-field time-picker-field" style="min-height: 42px; margin-bottom: 10px; font-size: 0.85rem;">
+            <p class="reason-label" style="margin-bottom: 4px; font-size: 0.8rem; color: var(--text-tertiary);">Reason for extension (optional)</p>
+            <input type="text" id="log-skipped-extend-reason" class="notes-field" placeholder="e.g. Postponed to next week" style="min-height: 42px; margin-bottom: 0; font-size: 0.85rem;">
+          </div>
+        </div>
+      </div>
+
+      <!-- Hidden notes holder for data compatibility -->
+      <textarea id="notes" class="notes-field hidden" style="display: none;"></textarea>
 
       <!-- Save -->
       <button id="save-btn" class="save-btn" style="margin-bottom: 12px;">Save Log</button>
-      <button id="delete-item-btn" class="save-btn" style="background: var(--danger); font-size: 0.9rem; padding: 12px;">Delete Task</button>
+      <div style="display: flex; gap: 10px; margin-bottom: 12px;">
+        <button id="edit-item-btn" class="save-btn" style="background: var(--accent); font-size: 0.9rem; padding: 12px; flex: 1;">Edit Task</button>
+        <button id="delete-item-btn" class="save-btn" style="background: var(--danger); font-size: 0.9rem; padding: 12px; flex: 1;">Delete</button>
+      </div>
     </div>
   </div>
 
-  <!-- ====== Bottom Navigation ====== -->
+  <!-- ====== Add Next Action Modal Overlay ====== -->
+  <div id="add-action-overlay" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-handle"></div>
+      <div class="modal-header">
+        <div>
+          <h2 id="add-action-modal-title">What could you do next?</h2>
+          <p class="modal-description" style="font-size: 0.8rem; color: var(--text-secondary); margin: 2px 0 0 0;">Create a small, concrete step you can execute next.</p>
+        </div>
+        <button id="add-action-close" class="modal-close" aria-label="Close">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+
+      <p id="new-action-parent-label" style="font-size: 0.8rem; color: var(--accent); font-weight: 600; margin-bottom: 8px;"></p>
+      <input type="hidden" id="new-action-parent-id" value="">
+
+      <p class="reason-label">Action Name / What to do</p>
+      <input type="text" id="new-action-name" class="notes-field" style="min-height: 48px; margin-bottom: 14px;" placeholder="e.g. Create database, Call supplier">
+
+      <p class="reason-label">Priority</p>
+      <input type="hidden" id="new-action-priority" value="">
+      <div class="priority-chips-group" id="new-action-priority-chips" style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px;">
+        <button type="button" class="priority-chip" data-value="Important & To Do">Important &amp; To Do</button>
+        <button type="button" class="priority-chip" data-value="To Do">To Do</button>
+        <button type="button" class="priority-chip" data-value="Optional">Optional</button>
+        <button type="button" class="priority-chip" data-value="Don't Do">Don't Do</button>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px;">
+        <div>
+          <p class="reason-label">Time (optional)</p>
+          <input type="time" id="new-action-time" class="notes-field time-picker-field" style="min-height: 44px; margin-bottom: 0;">
+        </div>
+        <div>
+          <p class="reason-label">Place (optional)</p>
+          <input type="text" id="new-action-place" class="notes-field" style="min-height: 44px; margin-bottom: 6px;" placeholder="e.g. Desk, Phone">
+          <div class="suggestion-chips" id="suggest-new-action-place"></div>
+        </div>
+      </div>
+
+      <p style="font-size: 0.75rem; color: var(--text-tertiary); margin: 0 0 14px 0;">Actions are ordered. New actions are added to the end of the sequence.</p>
+
+      <label style="display: flex; align-items: center; gap: 8px; font-size: 0.85rem; color: var(--text-secondary); cursor: pointer; margin-bottom: 20px;">
+        <input type="checkbox" id="new-action-remove-after-completion" style="width: 16px; height: 16px; accent-color: var(--accent);">
+        Remove after completion
+      </label>
+
+      <button id="add-action-btn" class="save-btn" style="background: var(--accent);">+ Create Next Action</button>
+    </div>
+  </div>
+
+  <!-- ====== Navigation (Sidebar on desktop, bottom bar on mobile) ====== -->
   <nav class="bottom-nav">
+    <div class="nav-brand">
+      <div class="nav-brand-icon">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M5 21V8a4 4 0 0 1 4-4h6"/>
+          <polyline points="13 1.5 19 6 13 10.5"/>
+          <line x1="5" y1="13.5" x2="14" y2="13.5"/>
+        </svg>
+      </div>
+      <div class="nav-brand-info">
+        <span class="nav-brand-title">PivotMe</span>
+        <span class="nav-brand-sub">Daily Execution</span>
+      </div>
+    </div>
     <div class="nav-inner">
       <a href="index.html" class="nav-item" aria-label="Habits">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -243,12 +489,29 @@
         </svg>
         <span>Tasks</span>
       </a>
+      <a href="plan.html" class="nav-item" aria-label="Plan">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+          <line x1="16" y1="2" x2="16" y2="6"/>
+          <line x1="8" y1="2" x2="8" y2="6"/>
+          <line x1="3" y1="10" x2="21" y2="10"/>
+        </svg>
+        <span>Plan</span>
+      </a>
       <a href="reflection.html" class="nav-item" aria-label="Reflect">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="12" cy="12" r="5"/>
           <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
         </svg>
         <span>Reflect</span>
+      </a>
+      <a href="help.html" class="nav-item" aria-label="Help">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/>
+          <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+          <line x1="12" y1="17" x2="12.01" y2="17"/>
+        </svg>
+        <span>Help</span>
       </a>
     </div>
   </nav>

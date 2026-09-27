@@ -3,12 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>Reflect — Behavior Log</title>
-  <meta name="description" content="Discover patterns in your habits and tasks.">
+  <title>Reflection — PivotMe</title>
+  <meta name="description" content="Discover behavioral patterns and reflect on your execution with PivotMe.">
 
   <!-- PWA -->
   <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#000000">
+  <meta name="theme-color" content="#07090D">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <link rel="icon" href="icon-512.png">
@@ -58,13 +58,35 @@
       <div class="modal-handle"></div>
       <div class="modal-header">
         <h2>Backend Settings</h2>
-        <button id="settings-close" class="modal-close" aria-label="Close">✕</button>
+        <button id="settings-close" class="modal-close" aria-label="Close">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
       </div>
       <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 16px;">
         Paste your Google Apps Script Web App URL below. This is stored securely in your local browser only.
       </p>
       <input type="password" id="api-url-input" class="notes-field" style="min-height: 48px; margin-bottom: 20px;" placeholder="https://script.google.com/macros/s/.../exec">
       <button id="settings-save-btn" class="save-btn" style="margin-bottom: 12px;">Save Settings</button>
+
+      <!-- Help & Guides Section in Settings -->
+      <div style="margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--separator); margin-bottom: 16px;">
+        <h3 style="font-size: 0.92rem; font-weight: 700; color: var(--text); margin-bottom: 4px;">Help &amp; Guides</h3>
+        <p style="font-size: 0.8rem; color: var(--text-tertiary); margin-bottom: 12px;">
+          Learn the PivotMe behavioral loop, how Plan works, and setup instructions.
+        </p>
+        <a href="help.html" class="save-btn" style="display: flex; align-items: center; justify-content: center; gap: 8px; text-decoration: none; background: var(--surface-hover); color: var(--text); border: 1px solid var(--separator); font-size: 0.88rem; padding: 10px 16px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+            <line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+          <span>Open Help</span>
+        </a>
+      </div>
+
       <button id="settings-reset-btn" class="save-btn" style="background: var(--danger); font-size: 0.9rem; padding: 12px;">Reset App &amp; Clear Cache</button>
     </div>
   </div>
@@ -76,18 +98,164 @@
       <p>Analyzing your data…</p>
     </div>
 
-    <!-- Filter Bar -->
-    <div id="filter-bar" class="filter-bar hidden">
-      <div class="filter-scroll">
-        <button class="filter-chip active" data-filter="all">All</button>
-      </div>
+
+
+    <!-- Reflection Tabs -->
+    <div id="reflection-tabs" class="reflection-tabs hidden">
+      <button class="reflection-tab active" data-tab="overall">Overall</button>
+      <button class="reflection-tab" data-tab="habits">Habits</button>
+      <button class="reflection-tab" data-tab="tasks">Tasks</button>
     </div>
 
-    <div id="insights" class="insight-list"></div>
+    <!-- Reflection Layout (2-column on desktop, stacked on mobile) -->
+    <div class="reflection-desktop-grid">
+      <!-- Left Column / Filter Section -->
+      <div id="filter-section" class="hidden">
+        <button id="filter-toggle" class="filter-panel-toggle">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+          Filter Insights
+        </button>
+        <div id="filter-panel" class="filter-panel">
+          <div class="filter-panel-inner">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
+              <span style="font-size: 0.85rem; font-weight: 700; color: var(--text);">Filters</span>
+              <button id="filter-clear-top" class="filter-clear-all-btn" style="padding: 2px 6px;">Reset</button>
+            </div>
+
+            <!-- Time Range Presets -->
+            <div class="filter-row">
+              <label>Time Range</label>
+              <div class="filter-presets">
+                <button class="filter-preset-btn" data-days="7">7d</button>
+                <button class="filter-preset-btn" data-days="30">30d</button>
+                <button class="filter-preset-btn" data-days="90">90d</button>
+                <button class="filter-preset-btn active" data-days="">All</button>
+              </div>
+            </div>
+
+            <!-- Type Selector -->
+            <div class="filter-row">
+              <label for="filter-type">Filter by Type</label>
+              <select id="filter-type">
+                <option value="">All Types</option>
+                <option value="growth">Growth Habits</option>
+                <option value="quit">Quit Habits</option>
+                <option value="task">Tasks</option>
+              </select>
+            </div>
+
+            <!-- Item Selector -->
+            <div class="filter-row">
+              <label for="filter-item">Filter by Item</label>
+              <select id="filter-item">
+                <option value="">All Habits &amp; Tasks</option>
+              </select>
+            </div>
+
+            <!-- Status Selector -->
+            <div class="filter-row">
+              <label for="filter-status">Outcome Status</label>
+              <select id="filter-status">
+                <option value="">All Statuses</option>
+                <option value="Done">Done / Resisted</option>
+                <option value="Partially Done">Partially Done</option>
+                <option value="Skipped">Skipped / Occurred</option>
+                <option value="Extended">Extended</option>
+              </select>
+            </div>
+
+            <!-- Priority Selector -->
+            <div class="filter-row">
+              <label for="filter-priority">Priority</label>
+              <select id="filter-priority">
+                <option value="">All Priorities</option>
+                <option value="Important & To Do">Important &amp; To Do</option>
+                <option value="To Do">To Do</option>
+                <option value="Optional">Optional</option>
+                <option value="Don't Do">Don't Do</option>
+              </select>
+            </div>
+
+            <!-- Progressive Disclosure: More Filters -->
+            <details class="more-filters-disclosure" style="margin-top: 4px;">
+              <summary style="font-size: 0.78rem; font-weight: 600; color: var(--text-tertiary); cursor: pointer; padding: 6px 0; user-select: none;">
+                ▸ More filters (Dates, Weekday, Place)
+              </summary>
+              <div style="display: flex; flex-direction: column; gap: 10px; padding-top: 8px;">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                  <div class="filter-row">
+                    <label for="filter-date-from">From</label>
+                    <input type="date" id="filter-date-from">
+                  </div>
+                  <div class="filter-row">
+                    <label for="filter-date-to">To</label>
+                    <input type="date" id="filter-date-to">
+                  </div>
+                </div>
+                <div class="filter-row">
+                  <label>Weekday</label>
+                  <div class="filter-weekday-group" id="filter-weekday-group">
+                    <button type="button" class="weekday-filter-btn active" data-weekday="">All</button>
+                    <button type="button" class="weekday-filter-btn" data-weekday="0">Su</button>
+                    <button type="button" class="weekday-filter-btn" data-weekday="1">Mo</button>
+                    <button type="button" class="weekday-filter-btn" data-weekday="2">Tu</button>
+                    <button type="button" class="weekday-filter-btn" data-weekday="3">We</button>
+                    <button type="button" class="weekday-filter-btn" data-weekday="4">Th</button>
+                    <button type="button" class="weekday-filter-btn" data-weekday="5">Fr</button>
+                    <button type="button" class="weekday-filter-btn" data-weekday="6">Sa</button>
+                  </div>
+                  <input type="hidden" id="filter-weekday" value="">
+                </div>
+                <div class="filter-row">
+                  <label for="filter-place">Place</label>
+                  <input type="text" id="filter-place" placeholder="e.g. Home, Office">
+                </div>
+              </div>
+            </details>
+
+            <div class="filter-actions" style="margin-top: 8px;">
+              <button id="filter-apply" class="filter-apply-btn">Apply Filters</button>
+              <button id="filter-clear" class="filter-clear-btn">Clear All</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column / Insights & Visualization Content -->
+      <div class="reflection-main-col" style="flex: 1; min-width: 0;">
+        <!-- Active Filter Summary Bar -->
+        <div id="active-filters-summary" class="active-filters-bar hidden"></div>
+
+        <!-- Drill-Down Header (shown when viewing a specific item) -->
+        <div id="drill-down-header" class="drill-down-header hidden">
+          <button id="drill-down-back" class="drill-down-back">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+            Back
+          </button>
+          <span id="drill-down-title" class="drill-down-title"></span>
+        </div>
+
+        <!-- Reflection Content Container -->
+        <div id="reflection-content"></div>
+      </div>
+    </div>
   </main>
 
-  <!-- ====== Bottom Navigation ====== -->
+  <!-- ====== Navigation (Sidebar on desktop, bottom bar on mobile) ====== -->
   <nav class="bottom-nav">
+    <div class="nav-brand">
+      <div class="nav-brand-icon">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M5 21V8a4 4 0 0 1 4-4h6"/>
+          <polyline points="13 1.5 19 6 13 10.5"/>
+          <line x1="5" y1="13.5" x2="14" y2="13.5"/>
+        </svg>
+      </div>
+      <div class="nav-brand-info">
+        <span class="nav-brand-title">PivotMe</span>
+        <span class="nav-brand-sub">Daily Execution</span>
+      </div>
+    </div>
     <div class="nav-inner">
       <a href="index.html" class="nav-item" aria-label="Habits">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -103,12 +271,29 @@
         </svg>
         <span>Tasks</span>
       </a>
+      <a href="plan.html" class="nav-item" aria-label="Plan">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+          <line x1="16" y1="2" x2="16" y2="6"/>
+          <line x1="8" y1="2" x2="8" y2="6"/>
+          <line x1="3" y1="10" x2="21" y2="10"/>
+        </svg>
+        <span>Plan</span>
+      </a>
       <a href="reflection.html" class="nav-item active" aria-label="Reflect">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="12" cy="12" r="5"/>
           <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
         </svg>
         <span>Reflect</span>
+      </a>
+      <a href="help.html" class="nav-item" aria-label="Help">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/>
+          <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+          <line x1="12" y1="17" x2="12.01" y2="17"/>
+        </svg>
+        <span>Help</span>
       </a>
     </div>
   </nav>
@@ -119,41 +304,52 @@
   <script src="script.js"></script>
   <script src="analysis.js"></script>
   <script>
-    // Cached data for filter switching
-    let _cachedLogs        = [];
-    let _cachedHabits      = [];
-    let _cachedTasks       = [];
-    let _cachedReflections = [];
-    let _activeFilter = 'all';
+    // Standardized SVG icons for reflection
+    const refIcons = {
+      bulb: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--accent);"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></svg>',
+      alert: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--warning);"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
+      target: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--success);"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>',
+      breakdown: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--warning);"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>',
+      trend: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--accent);"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>',
+      calendar: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--accent);"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>',
+      chevron: '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>'
+    };
 
-    /**
-     * Fetch logs from IndexedDB (offline-first), generate insights,
-     * build filter bar, and render cards.
-     */
+    // Cached data
+    let _cachedLogs    = [];
+    let _cachedHabits  = [];
+    let _cachedTasks   = [];
+    let _cachedPlanItems = [];
+    let _activeTab     = 'overall';
+    let _drillDownItem = null;
+    let _drillDownParent = null;
+    let _filterState   = {};
+
+    // ============================================================
+    // Initialization
+    // ============================================================
     async function initReflectionPage() {
-      const loading  = document.getElementById('loading');
-      const container = document.getElementById('insights');
-      const filterBar = document.getElementById('filter-bar');
+      const loading   = document.getElementById('loading');
+      const tabs      = document.getElementById('reflection-tabs');
+      const filterSec = document.getElementById('filter-section');
 
       try {
-        // Initialize IndexedDB
         await dbInit();
-
-        // Check if we need to restore from Sheets
         const hasData = await dbHasData();
         if (!hasData && navigator.onLine && API_URL) {
           loading.innerHTML = '<div class="loading-spinner"></div><p>Restoring data from cloud…</p>';
           await restoreFromSheets();
         }
 
-        // Load logs, habits, tasks, and reflections from IndexedDB
-        _cachedLogs        = await dbGetAllLogs();
-        _cachedHabits      = await dbGetAllHabits();
-        _cachedTasks       = await dbGetAllTasks();
-        _cachedReflections = await dbGetAllReflections();
+        _cachedLogs   = await dbGetAllLogs();
+        _cachedHabits = await dbGetAllHabits();
+        _cachedTasks  = await dbGetAllTasks();
+        
+        if (typeof dbGetAllPlanItems === 'function') {
+          _cachedPlanItems = await dbGetAllPlanItems();
+        }
 
         if (_cachedLogs.length === 0 && navigator.onLine && API_URL) {
-          // Fallback: try fetching directly from API if IndexedDB is empty
           try {
             const data = await fetchLogs();
             const apiLogs = data.data || data;
@@ -166,192 +362,806 @@
           }
         }
 
-        // Build filter bar from unique names in logs + reflections
-        buildFilterBar(_cachedLogs, _cachedHabits, _cachedTasks);
-
-        // Render insights for active filter
         loading.classList.add('hidden');
-        applyFilter(_activeFilter);
+        tabs.classList.remove('hidden');
+        filterSec.classList.remove('hidden');
+        populateItemFilter();
+        renderActiveFilterSummary();
+        renderActiveTab();
 
-        // Background sync
-        if (navigator.onLine && API_URL) {
-          syncToSheets();
-        }
+        if (navigator.onLine && API_URL) syncToSheets();
       } catch (err) {
         loading.innerHTML = '<p>Could not load data.<br>Check your connection.</p>';
         console.error(err);
       }
     }
 
-    /**
-     * Build the filter bar chips from habit and task names.
-     */
-    function buildFilterBar(logs, habits, tasks) {
-      const filterBar = document.getElementById('filter-bar');
-      const scrollContainer = filterBar.querySelector('.filter-scroll');
-      if (!scrollContainer) return;
-
-      // Get unique habit names from logs
-      const habitNames = [...new Set(
-        logs
-          .filter((l) => l.type === 'Habit')
-          .map((l) => l.name)
-      )];
-
-      // Also include habits from the habits list that may not have logs yet
-      habits.forEach((h) => {
-        if (!habitNames.includes(h.name)) {
-          habitNames.push(h.name);
-        }
-      });
-
-      // Get unique task names from logs
-      const taskNames = [...new Set(
-        logs
-          .filter((l) => l.type === 'Task')
-          .map((l) => l.name)
-      )];
-
-      // Also include tasks from the tasks list that may not have logs yet
-      tasks.forEach((t) => {
-        if (!taskNames.includes(t.name)) {
-          taskNames.push(t.name);
-        }
-      });
-
-      if (habitNames.length === 0 && taskNames.length === 0) {
-        filterBar.classList.add('hidden');
-        return;
-      }
-
-      // Clear existing chips (except "All")
-      scrollContainer.innerHTML = '<button class="filter-chip active" data-filter="all">All</button>';
-
-      // Add habit chips
-      habitNames.forEach((name) => {
-        const chip = document.createElement('button');
-        chip.className = 'filter-chip';
-        chip.dataset.filter = name;
-
-        // Add a visual indicator for habits (quit vs build)
-        const habitItem = habits.find((h) => h.name === name);
-        if (habitItem && habitItem.behaviorType === 'Bad') {
-          chip.innerHTML = `<span style="color: var(--danger); margin-right: 2px;">🔴</span> ${name}`;
-        } else {
-          chip.innerHTML = `<span style="color: var(--success); margin-right: 2px;">🟢</span> ${name}`;
-        }
-
-        scrollContainer.appendChild(chip);
-      });
-
-      // Add task chips
-      taskNames.forEach((name) => {
-        const chip = document.createElement('button');
-        chip.className = 'filter-chip';
-        chip.dataset.filter = name;
-        chip.innerHTML = `<span style="color: var(--accent); margin-right: 2px;">📋</span> ${name}`;
-
-        scrollContainer.appendChild(chip);
-      });
-
-      // Show filter bar
-      filterBar.classList.remove('hidden');
-
-      // Attach click listeners
-      scrollContainer.querySelectorAll('.filter-chip').forEach((chip) => {
-        chip.addEventListener('click', () => {
-          scrollContainer.querySelectorAll('.filter-chip').forEach((c) => c.classList.remove('active'));
-          chip.classList.add('active');
-          _activeFilter = chip.dataset.filter;
-          applyFilter(_activeFilter);
+    // ============================================================
+    // Tab Navigation
+    // ============================================================
+    function initTabs() {
+      document.querySelectorAll('.reflection-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+          document.querySelectorAll('.reflection-tab').forEach(t => t.classList.remove('active'));
+          tab.classList.add('active');
+          _activeTab = tab.dataset.tab;
+          _drillDownItem = null;
+          hideDrillDown();
+          renderActiveTab();
         });
       });
     }
 
-    /**
-     * Apply a filter and render the appropriate insights.
-     * For per-item views, blends log-based analysis + reflection-based strategies.
-     */
-    function applyFilter(filter) {
-      const container = document.getElementById('insights');
-      let insights;
+    function renderActiveTab() {
+      const filteredLogs = applyFilters(_cachedLogs);
 
-      if (filter === 'all') {
-        insights = generateInsights(_cachedLogs);
+      if (_drillDownItem) {
+        renderDrillDown(filteredLogs);
+        return;
+      }
 
-        // Also show overall reflection stats if reflections exist
-        if (_cachedReflections && _cachedReflections.length > 0) {
-          const reflInsights = generateInsightsFromReflections(_cachedReflections, null);
-          if (reflInsights.length > 0) {
-            insights = insights.concat(reflInsights);
-          }
-        }
-      } else {
-        // Per-item deep dive
-        insights = generateHabitInsights(_cachedLogs, filter, _cachedHabits);
+      switch (_activeTab) {
+        case 'overall':
+          renderOverallTab(filteredLogs);
+          break;
+        case 'habits':
+          renderHabitsTab(filteredLogs);
+          break;
+        case 'tasks':
+          renderTasksTab(filteredLogs);
+          break;
+      }
+    }
 
-        // Enrich with reflection-based insights (structured strategies & fail reasons)
-        if (_cachedReflections && _cachedReflections.length > 0) {
-          const reflInsights = generateInsightsFromReflections(_cachedReflections, filter);
-          if (reflInsights.length > 0) {
-            // Add a divider header card, then the reflection insights
-            insights.push({
-              title: '📝 Reflection Strategies',
-              text: 'Based on what you wrote when logging this item.',
-              tone: 'neutral',
-              _isDivider: true
-            });
-            insights = insights.concat(reflInsights);
-          }
+    // ============================================================
+    // Overall Tab — Five-Question Sections + Planning
+    // ============================================================
+    function renderOverallTab(logs) {
+      const container = document.getElementById('reflection-content');
+      const reflection = generateReflection(logs, _cachedHabits, _cachedTasks);
+
+      let html = '';
+
+      // Summary card
+      if (reflection.summary.total > 0) {
+        const engagePct = pct(reflection.summary.done + reflection.summary.partial, reflection.summary.total);
+        html += `<div class="observation-card neutral" style="margin-bottom: 16px;">
+          <div class="observation-text">This Week: ${reflection.summary.thisWeekDone} completed${reflection.summary.thisWeekPartial ? ` + ${reflection.summary.thisWeekPartial} partial` : ''}</div>
+          <div class="observation-evidence">Overall: ${engagePct}% engagement rate across ${reflection.summary.total} logged sessions</div>
+        </div>`;
+      }
+
+      // Five sections
+      const sections = [
+        { key: 'whatHelps', icon: refIcons.bulb, title: 'What Helps Me', data: reflection.whatHelps },
+        { key: 'whatBlocksYou', icon: refIcons.alert, title: 'What Gets in My Way', data: reflection.whatBlocksYou },
+        { key: 'whereBest', icon: refIcons.target, title: 'Where I Perform Best', data: reflection.whereBest },
+        { key: 'whereBreaksDown', icon: refIcons.breakdown, title: 'Where Work Breaks Down', data: reflection.whereBreaksDown },
+        { key: 'whatIsChanging', icon: refIcons.trend, title: 'What Is Changing', data: reflection.whatIsChanging },
+      ];
+      
+      // Planning Section
+      if (typeof analyzePlanAdherence === 'function' && _cachedPlanItems && _cachedPlanItems.length > 0) {
+        const planAnalysis = analyzePlanAdherence(logs, _cachedPlanItems);
+        if (planAnalysis.patterns && planAnalysis.patterns.length > 0) {
+          sections.push({ key: 'planAdherence', icon: refIcons.calendar, title: 'Plan Adherence', data: planAnalysis.patterns });
         }
       }
 
-      renderInsights(insights, container);
+      html += renderSections(sections);
+      container.innerHTML = html;
+      initSectionToggles();
     }
 
-    /**
-     * Render insight objects as styled cards.
-     * @param {Array}       insights  — [{title, text, tone}, ...]
-     * @param {HTMLElement}  container — target element
-     */
-    function renderInsights(insights, container) {
-      container.innerHTML = '';
+    // ============================================================
+    // Habits Tab — Item List
+    // ============================================================
+    function renderHabitsTab(logs) {
+      const container = document.getElementById('reflection-content');
+      const habitNames = [...new Set([
+        ..._cachedHabits.map(h => h.name),
+        ...logs.filter(l => l.type === 'Habit').map(l => l.name)
+      ])];
 
-      insights.forEach((insight, i) => {
-        const card = document.createElement('div');
-        card.className = `insight-card ${insight.tone || 'neutral'}`;
-        card.style.animationDelay = `${i * 0.06}s`;
+      if (habitNames.length === 0) {
+        container.innerHTML = '<div class="reflection-empty">No habits found. Create habits to see their analysis here.</div>';
+        return;
+      }
 
-        const title = document.createElement('div');
-        title.className = 'insight-title';
-        title.textContent = insight.title;
+      let html = '<div class="reflection-item-list">';
+      habitNames.forEach(name => {
+        const itemLogs = logs.filter(l => l.name === name && l.type === 'Habit');
+        const habitItem = _cachedHabits.find(h => h.name === name);
+        const isQuit = habitItem && habitItem.behaviorType === 'Bad';
+        const doneCount = itemLogs.filter(l => l.status === 'Done').length;
+        const donePct = itemLogs.length > 0 ? pct(doneCount, itemLogs.length) : 0;
+        const badge = isQuit
+          ? '<span class="badge-quit" style="font-size:0.65rem; padding:2px 6px; margin-right:6px;">Quit</span>'
+          : '<span class="badge-growth" style="font-size:0.65rem; padding:2px 6px; margin-right:6px;">Habit</span>';
+        const rateLabel = isQuit ? `${donePct}% resisted` : `${donePct}% done`;
+        const metaText = itemLogs.length > 0 ? `${rateLabel} · ${itemLogs.length} sessions` : 'No data yet';
 
-        const text = document.createElement('div');
-        text.className = 'insight-text';
-        text.textContent = insight.text;
+        html += `<button class="reflection-item-btn" data-item="${encodeURIComponent(name)}" data-type="Habit">
+          <div>
+            <div class="reflection-item-name">${badge} ${name}</div>
+            <div class="reflection-item-meta">${metaText}</div>
+          </div>
+          <span class="reflection-item-chevron">${refIcons.chevron}</span>
+        </button>`;
+      });
+      html += '</div>';
 
-        card.appendChild(title);
-        card.appendChild(text);
-        container.appendChild(card);
+      container.innerHTML = html;
+      initItemButtons();
+    }
+
+    // ============================================================
+    // Tasks Tab — Item List
+    // ============================================================
+    // Priority Tier Breakdown Helper
+    // ============================================================
+    function renderPriorityBreakdown(tasks, logs) {
+      const tiers = [
+        { label: 'Important & To Do', key: 'Important & To Do' },
+        { label: 'To Do', key: 'To Do' },
+        { label: 'Optional', key: 'Optional' },
+        { label: 'Don\'t Do', key: 'Don\'t Do' }
+      ];
+      // Gather any additional custom priorities found on tasks
+      const extraTiers = [...new Set(tasks.map(t => t.priority).filter(p => p && !tiers.some(t => t.key === p)))];
+      extraTiers.forEach(p => tiers.push({ label: p, key: p }));
+
+      let totalTierLogs = 0;
+      const tierStats = tiers.map(tier => {
+        const tierTasks = tasks.filter(t => t.priority === tier.key);
+        const tierTaskNames = new Set(tierTasks.map(t => t.name));
+        const tierLogs = logs.filter(l => (l.type === 'Task' || l.type === 'Subtask' || l.type === 'NextAction') && (tierTaskNames.has(l.name) || tierTaskNames.has(l.parentTaskName)));
+        totalTierLogs += tierLogs.length;
+        const doneLogs = tierLogs.filter(l => l.status === 'Done');
+        const partialLogs = tierLogs.filter(l => l.status === 'Partially Done');
+        const skippedLogs = tierLogs.filter(l => l.status === 'Skipped');
+        const completionRate = tierLogs.length > 0 ? Math.round((doneLogs.length / tierLogs.length) * 100) : null;
+        return {
+          tier: tier.label,
+          taskCount: tierTasks.length,
+          logCount: tierLogs.length,
+          doneCount: doneLogs.length,
+          partialCount: partialLogs.length,
+          skippedCount: skippedLogs.length,
+          completionRate
+        };
+      }).filter(ts => ts.taskCount > 0 || ts.logCount > 0);
+
+      if (tierStats.length === 0 || totalTierLogs === 0) {
+        return `<div class="observation-card neutral" style="margin-bottom: 16px;">
+          <div style="font-weight: 700; font-size: 0.88rem; margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
+            ${refIcons.target} Priority Execution &amp; Focus
+          </div>
+          <div class="observation-evidence">Not enough data yet to compare priority execution. Assign priorities to tasks and log sessions to monitor if lower-priority items crowd out higher-priority ones.</div>
+        </div>`;
+      }
+
+      let html = `<div class="observation-card neutral" style="margin-bottom: 16px;">
+        <div style="font-weight: 700; font-size: 0.88rem; margin-bottom: 10px; display: flex; align-items: center; gap: 6px;">
+          ${refIcons.target} Priority Execution &amp; Focus
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; margin-bottom: 10px;">`;
+
+      tierStats.forEach(ts => {
+        const rateText = ts.completionRate !== null ? `${ts.completionRate}%` : '—';
+        const rateColor = ts.completionRate !== null && ts.completionRate >= 70 ? 'var(--success)' : (ts.completionRate !== null && ts.completionRate >= 40 ? 'var(--partial)' : 'var(--text-secondary)');
+        html += `<div style="background: var(--surface); border: 1px solid var(--separator); border-radius: var(--radius-xs); padding: 8px 10px;">
+          <div style="font-size: 0.74rem; font-weight: 600; color: var(--text-secondary); text-overflow: ellipsis; overflow: hidden; white-space: nowrap;" title="${ts.tier}">${ts.tier}</div>
+          <div style="font-size: 1.15rem; font-weight: 700; color: ${rateColor}; margin: 2px 0;">${rateText}</div>
+          <div style="font-size: 0.7rem; color: var(--text-tertiary);">${ts.taskCount} task${ts.taskCount !== 1 ? 's' : ''} · ${ts.logCount} session${ts.logCount !== 1 ? 's' : ''}</div>
+        </div>`;
+      });
+
+      html += `</div>`;
+
+      // Check crowding-out pattern: e.g. lower priority has higher completion rate or significantly more sessions than high priority
+      const highTier = tierStats.find(t => t.tier === 'Important & To Do' || t.tier.toLowerCase().includes('important'));
+      const lowTier = tierStats.find(t => t.tier === 'Optional' || t.tier === 'To Do');
+      if (highTier && lowTier && highTier.logCount >= 3 && lowTier.logCount >= 3) {
+        if (lowTier.completionRate > highTier.completionRate) {
+          html += `<div class="observation-evidence" style="color: var(--warning);">Note: Lower-priority tasks (${lowTier.tier}) have a higher completion rate (${lowTier.completionRate}%) than higher-priority tasks (${highTier.tier}: ${highTier.completionRate}%).</div>`;
+        } else {
+          html += `<div class="observation-evidence">Higher-priority tasks (${highTier.tier}) currently lead execution at ${highTier.completionRate}% completion.</div>`;
+        }
+      }
+
+      html += `</div>`;
+      return html;
+    }
+
+    // ============================================================
+    // Tasks Tab — Item List
+    // ============================================================
+    function renderTasksTab(logs) {
+      const container = document.getElementById('reflection-content');
+      const taskNames = [...new Set([
+        ..._cachedTasks.map(t => t.name),
+        ...logs.filter(l => l.type === 'Task').map(l => l.name)
+      ])];
+
+      if (taskNames.length === 0) {
+        container.innerHTML = '<div class="reflection-empty">No tasks found. Create tasks to see their analysis here.</div>';
+        return;
+      }
+
+      let html = renderPriorityBreakdown(_cachedTasks, logs);
+
+      html += '<div class="reflection-item-list">';
+      taskNames.forEach(name => {
+        const itemLogs = logs.filter(l => l.name === name || l.parentTaskName === name);
+        const taskItem = _cachedTasks.find(t => t.name === name);
+        const donePct = itemLogs.length > 0 ? pct(itemLogs.filter(l => l.status === 'Done').length, itemLogs.length) : 0;
+        let actionCount = 0;
+        if (taskItem) {
+          const acts = (typeof getTaskNextActions === 'function') ? getTaskNextActions(taskItem) : (taskItem.nextActions || []);
+          actionCount = acts.length;
+        }
+
+        const metaDetail = actionCount > 0 ? ` · ${actionCount} next action${actionCount > 1 ? 's' : ''}` : '';
+        const metaText = itemLogs.length > 0
+          ? `${donePct}% done · ${itemLogs.length} sessions${metaDetail}`
+          : `No session data${metaDetail}`;
+
+        html += `<button class="reflection-item-btn" data-item="${encodeURIComponent(name)}" data-type="Task">
+          <div>
+            <div class="reflection-item-name"><span class="badge-subtask" style="font-size:0.65rem; padding:2px 6px; margin-right:6px;">Task</span> ${name}</div>
+            <div class="reflection-item-meta">${metaText}</div>
+          </div>
+          <span class="reflection-item-chevron">${refIcons.chevron}</span>
+        </button>`;
+      });
+      html += '</div>';
+
+      container.innerHTML = html;
+      initItemButtons();
+    }
+
+    // ============================================================
+    // Drill-Down — Per-Item Five-Question View
+    // ============================================================
+    function renderDrillDown(logs) {
+      const container = document.getElementById('reflection-content');
+      const reflection = generateItemReflection(logs, _drillDownItem, _cachedHabits, _cachedTasks);
+
+      showDrillDown(_drillDownItem);
+
+      let html = '';
+      const isQuit = reflection.summary.isQuitHabit;
+
+      // Summary card
+      if (reflection.summary.total > 0) {
+        const s = reflection.summary;
+        const fullPct = pct(s.done, s.total);
+        const engagePct = pct(s.done + s.partial, s.total);
+        const doneLabel = s.doneLabel || 'completed';
+        const streakHtml = s.currentStreak > 0
+          ? `<div style="margin-top: 8px; color: var(--success); font-weight: 600;">${s.currentStreak}-day streak${s.bestStreak > s.currentStreak ? ` (best: ${s.bestStreak})` : ' — personal best!'}</div>`
+          : (s.bestStreak > 1 ? `<div style="margin-top: 8px; color: var(--text-tertiary);">Best streak: ${s.bestStreak} days</div>` : '');
+
+        const partialLabel = isQuit ? 'including partial resistance' : 'including partial';
+        html += `<div class="observation-card ${engagePct >= 70 ? 'positive' : engagePct >= 40 ? 'neutral' : 'negative'}" style="margin-bottom: 16px;">
+          <div class="observation-text">${fullPct}% fully ${doneLabel} · ${engagePct}% ${partialLabel}</div>
+          <div class="observation-evidence">${s.done} ${isQuit ? 'resisted' : 'done'}, ${s.partial} partial, ${s.skipped} ${isQuit ? 'done (unwanted)' : 'skipped'} out of ${s.total}</div>
+          ${streakHtml}
+        </div>`;
+      }
+
+      // Task-Specific Next Actions & Execution
+      const taskItem = _cachedTasks.find(t => t.name === _drillDownItem);
+      if (taskItem) {
+        const actions = (typeof getTaskNextActions === 'function') ? getTaskNextActions(taskItem) : (taskItem.nextActions || []);
+        if (actions.length > 0) {
+          const doneActs = actions.filter(a => a.status === 'Done' || a.done).length;
+          const donePct = Math.round((doneActs / actions.length) * 100);
+          html += `<div class="observation-card neutral" style="margin-bottom: 14px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+              <span style="font-weight:700; font-size:0.85rem;">Next Actions Executed</span>
+              <span style="font-weight:700; font-size:0.9rem; color:var(--accent);">${doneActs} of ${actions.length} (${donePct}%)</span>
+            </div>
+            <div style="width:100%; height:6px; background:var(--separator); border-radius:3px; overflow:hidden;">
+              <div style="width:${donePct}%; height:100%; background:var(--accent); border-radius:3px; transition:width 0.3s ease;"></div>
+            </div>
+          </div>`;
+        }
+
+        // Deadline History & Extensions
+        const extensions = Array.isArray(taskItem.deadlineExtensions) ? taskItem.deadlineExtensions : [];
+        if (taskItem.originalDeadline || extensions.length > 0) {
+          const orig = taskItem.originalDeadline || taskItem.deadline;
+          html += `<div class="observation-card neutral" style="margin-bottom: 14px; padding: 10px 14px;">
+            <div style="font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 4px;">Deadline History</div>
+            <div style="font-size: 0.82rem; color: var(--text);">Original Deadline: <strong>${orig || 'None'}</strong>${taskItem.deadline && taskItem.deadline !== orig ? ` · Current Deadline: <strong>${taskItem.deadline}</strong>` : ''}</div>
+            ${extensions.length > 0 ? `<div class="observation-evidence" style="margin-top: 4px;">${extensions.length} extension(s) recorded: ${extensions.map(e => `${e.newDeadline}${e.reason ? ` (${e.reason})` : ''}`).join(', ')}</div>` : ''}
+          </div>`;
+        }
+
+        // Next Actions
+        if (actions.length > 0) {
+          html += `<div class="subtask-section" style="margin-bottom: 16px;">
+            <div class="subtask-section-title" style="display:flex; justify-content:space-between; align-items:center;">
+              <span>Next Actions</span>
+              <span style="font-size:0.75rem; font-weight:normal; color:var(--text-tertiary);">${actions.length} action(s)</span>
+            </div>
+            <div class="reflection-item-list">`;
+
+          actions.forEach((act, idx) => {
+            const actLogs = logs.filter(l => (l.actionName === act.name || l.name === act.name || l.subtaskName === act.name) && (l.parentTaskName === taskItem.name || l.name === taskItem.name));
+            const isDone = act.status === 'Done' || act.done;
+            const sBadge = isDone
+              ? `<span style="color:var(--success); font-weight:700;">[Done]</span>`
+              : (act.status === 'Partially Done'
+                 ? `<span style="color:var(--partial); font-weight:700;">[Partial]</span>`
+                 : (act.status === 'Skipped'
+                    ? `<span style="color:var(--text-tertiary);">[Skipped]</span>`
+                    : `<span style="color:var(--text-tertiary);">[Pending]</span>`));
+
+            html += `<a href="next-action.html?task=${encodeURIComponent(taskItem.name)}&actionId=${encodeURIComponent(act.id || act.name)}" style="text-decoration:none; display:flex; align-items:center; justify-content:space-between; padding:10px 14px; background:var(--surface); border:1px solid var(--separator); border-radius:var(--radius-xs); margin-bottom:6px; cursor:pointer;">
+              <div>
+                <span style="font-weight:700; color:var(--text-secondary); font-size:0.8rem; margin-right:6px;">${idx + 1}.</span>
+                ${sBadge}
+                <span style="font-weight:600; font-size:0.85rem; ${isDone ? 'text-decoration:line-through; color:var(--text-tertiary);' : 'color:var(--text);'}">${escapeHtml(act.name)}</span>
+              </div>
+              <div style="font-size:0.75rem; color:var(--text-tertiary);">${actLogs.length > 0 ? `${actLogs.length} session(s)` : ''}</div>
+            </a>`;
+          });
+          html += `</div></div>`;
+        }
+
+        // Sticking Points & Friction Section
+        const taskLogs = logs.filter(l => l.name === taskItem.name || l.parentTaskName === taskItem.name);
+        html += `<div class="subtask-section" style="margin-bottom: 16px;">
+          <div class="subtask-section-title">Sticking Points &amp; Friction</div>`;
+
+        if (taskLogs.length < 3) {
+          html += `<p class="reflection-no-data" style="margin: 8px 0;">Not enough data yet. Log at least 3 sessions to reveal sticking points.</p>`;
+        } else {
+          const childLogMap = {};
+          taskLogs.forEach(l => {
+            const key = l.subtaskName || l.action || (l.type === 'Task' ? l.name : null);
+            if (!key) return;
+            if (!childLogMap[key]) {
+              childLogMap[key] = { name: key, total: 0, done: 0, partial: 0, skipped: 0 };
+            }
+            childLogMap[key].total++;
+            if (l.status === 'Done') childLogMap[key].done++;
+            else if (l.status === 'Partially Done') childLogMap[key].partial++;
+            else if (l.status === 'Skipped') childLogMap[key].skipped++;
+          });
+
+          const stickingList = Object.values(childLogMap).filter(c => c.partial > 0 || c.skipped > 0);
+          if (stickingList.length === 0) {
+            html += `<div class="observation-card positive">
+              <div class="observation-text">No repeated sticking points detected across ${taskLogs.length} sessions.</div>
+              <div class="observation-evidence">All logged executions progressed without recorded partial or skipped friction.</div>
+            </div>`;
+          } else {
+            stickingList.forEach(s => {
+              html += `<div class="observation-card warning" style="margin-bottom: 8px;">
+                <div class="observation-text">"${s.name}" in ${taskItem.name} is where execution commonly stops or is modified.</div>
+                <div class="observation-evidence">${s.total} session(s) logged: ${s.done} done, ${s.partial} partial, ${s.skipped} skipped</div>
+              </div>`;
+            });
+          }
+        }
+        html += `</div>`;
+      }
+
+      // Five sections — use quit-specific labels when applicable
+      const sections = isQuit ? [
+        { key: 'whatHelps', icon: refIcons.bulb, title: 'What Helps Resistance', data: reflection.whatHelps },
+        { key: 'whatBlocksYou', icon: refIcons.alert, title: 'Common Triggers', data: reflection.whatBlocksYou },
+        { key: 'whereBest', icon: refIcons.target, title: 'Best Resistance Conditions', data: reflection.whereBest },
+        { key: 'whereBreaksDown', icon: refIcons.breakdown, title: 'Repeated Patterns', data: reflection.whereBreaksDown },
+        { key: 'whatIsChanging', icon: refIcons.trend, title: 'What Is Changing', data: reflection.whatIsChanging },
+      ] : [
+        { key: 'whatHelps', icon: refIcons.bulb, title: 'What Helps', data: reflection.whatHelps },
+        { key: 'whatBlocksYou', icon: refIcons.alert, title: 'What Gets in the Way', data: reflection.whatBlocksYou },
+        { key: 'whereBest', icon: refIcons.target, title: 'Best Conditions', data: reflection.whereBest },
+        { key: 'whereBreaksDown', icon: refIcons.breakdown, title: 'Where It Breaks Down', data: reflection.whereBreaksDown },
+        { key: 'whatIsChanging', icon: refIcons.trend, title: 'What Is Changing', data: reflection.whatIsChanging },
+      ];
+
+      html += renderSections(sections);
+
+      container.innerHTML = html;
+      initSectionToggles();
+      initItemButtons();
+    }
+
+    // ============================================================
+    // Rendering Helpers
+    // ============================================================
+
+    function renderSections(sections) {
+      let html = '';
+      sections.forEach((section, idx) => {
+        const count = section.data.length;
+        const hasContent = count > 0;
+        const openClass = idx < 2 ? ' open' : ''; // First two sections open by default
+
+        html += `<div class="reflection-section${openClass}" data-section="${section.key}">
+          <button class="reflection-section-header">
+            <span class="reflection-section-icon">${section.icon}</span>
+            <span class="reflection-section-title">${section.title}</span>
+            ${hasContent ? `<span class="reflection-section-count">${count}</span>` : ''}
+            <span class="reflection-section-chevron">${refIcons.chevron}</span>
+          </button>
+          <div class="reflection-section-body">`;
+
+        if (!hasContent) {
+          html += `<p class="reflection-no-data">Not enough data yet.</p>`;
+        } else {
+          section.data.forEach((obs, i) => {
+            html += `<div class="observation-card ${obs.tone || 'neutral'}" style="animation-delay: ${i * 0.05}s">
+              <div class="observation-text">${obs.text}</div>
+              ${obs.evidence ? `<div class="observation-evidence">${obs.evidence}</div>` : ''}
+              ${obs.itemName ? `<span class="observation-item-tag">${obs.itemName}</span>` : ''}
+            </div>`;
+          });
+        }
+
+        html += '</div></div>';
+      });
+      return html;
+    }
+
+    function initSectionToggles() {
+      document.querySelectorAll('.reflection-section-header').forEach(header => {
+        header.addEventListener('click', () => {
+          header.parentElement.classList.toggle('open');
+        });
       });
     }
 
-    // Initialize on page load
-    document.addEventListener('DOMContentLoaded', initReflectionPage);
+    function initItemButtons() {
+      document.querySelectorAll('.reflection-item-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const itemName = decodeURIComponent(btn.dataset.item);
+          const parentName = btn.dataset.parent ? decodeURIComponent(btn.dataset.parent) : null;
+          _drillDownParent = parentName;
+          _drillDownItem = itemName;
+          renderActiveTab();
+        });
+      });
+    }
 
-    // Refresh button
+    // ============================================================
+    // Drill-Down Navigation
+    // ============================================================
+    function showDrillDown(name) {
+      const header = document.getElementById('drill-down-header');
+      const title = document.getElementById('drill-down-title');
+      header.classList.remove('hidden');
+      title.textContent = name;
+    }
+
+    function hideDrillDown() {
+      document.getElementById('drill-down-header').classList.add('hidden');
+    }
+
+    function initDrillDown() {
+      document.getElementById('drill-down-back').addEventListener('click', () => {
+        if (_drillDownParent) {
+          _drillDownItem = _drillDownParent;
+          _drillDownParent = null;
+        } else {
+          _drillDownItem = null;
+          hideDrillDown();
+        }
+        renderActiveTab();
+      });
+    }
+
+    // ============================================================
+    // Filter Panel
+    // ============================================================
+    function populateItemFilter() {
+      const select = document.getElementById('filter-item');
+      if (!select) return;
+      // Clear existing options beyond "All Items"
+      while (select.options.length > 1) select.remove(1);
+
+      const allNames = [
+        ..._cachedHabits.map(h => ({ name: h.name, type: 'Habit' })),
+        ..._cachedTasks.map(t => ({ name: t.name, type: 'Task' }))
+      ];
+      allNames.forEach(item => {
+        const opt = document.createElement('option');
+        opt.value = item.name;
+        opt.textContent = `${item.name} (${item.type})`;
+        select.appendChild(opt);
+      });
+    }
+
+    function renderActiveFilterSummary() {
+      const summaryEl = document.getElementById('active-filters-summary');
+      if (!summaryEl) return;
+      summaryEl.innerHTML = '';
+
+      const activePills = [];
+
+      if (_filterState.dateFrom && _filterState.dateTo) {
+        activePills.push({ label: `${_filterState.dateFrom} to ${_filterState.dateTo}`, key: 'date' });
+      } else if (_filterState.dateFrom) {
+        activePills.push({ label: `From ${_filterState.dateFrom}`, key: 'dateFrom' });
+      } else if (_filterState.dateTo) {
+        activePills.push({ label: `To ${_filterState.dateTo}`, key: 'dateTo' });
+      }
+
+      if (_filterState.type) {
+        const typeLabels = { growth: 'Growth Habits', quit: 'Quit Habits', task: 'Tasks' };
+        activePills.push({ label: `Type: ${typeLabels[_filterState.type] || _filterState.type}`, key: 'type' });
+      }
+
+      if (_filterState.item) {
+        activePills.push({ label: `Item: ${_filterState.item}`, key: 'item' });
+      }
+
+      if (_filterState.status) {
+        activePills.push({ label: `Status: ${_filterState.status}`, key: 'status' });
+      }
+
+      if (_filterState.priority) {
+        activePills.push({ label: `Priority: ${_filterState.priority}`, key: 'priority' });
+      }
+
+      if (_filterState.weekday !== undefined && _filterState.weekday !== '') {
+        const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        activePills.push({ label: `${days[_filterState.weekday]}`, key: 'weekday' });
+      }
+
+      if (_filterState.place) {
+        activePills.push({ label: `Place: ${_filterState.place}`, key: 'place' });
+      }
+
+      if (activePills.length === 0) {
+        summaryEl.classList.add('hidden');
+        return;
+      }
+
+      summaryEl.classList.remove('hidden');
+
+      activePills.forEach(p => {
+        const pill = document.createElement('span');
+        pill.className = 'filter-pill';
+        pill.innerHTML = `<span>${p.label}</span><button type="button" class="filter-pill-remove" aria-label="Remove filter" data-key="${p.key}">×</button>`;
+        summaryEl.appendChild(pill);
+      });
+
+      const clearAllBtn = document.createElement('button');
+      clearAllBtn.type = 'button';
+      clearAllBtn.className = 'filter-clear-all-btn';
+      clearAllBtn.textContent = 'Clear All';
+      clearAllBtn.onclick = () => {
+        const clearBtn = document.getElementById('filter-clear');
+        if (clearBtn) clearBtn.click();
+      };
+      summaryEl.appendChild(clearAllBtn);
+
+      // Wire individual pill remove
+      summaryEl.querySelectorAll('.filter-pill-remove').forEach(btn => {
+        btn.onclick = (e) => {
+          e.stopPropagation();
+          const key = btn.dataset.key;
+          if (key === 'date') {
+            _filterState.dateFrom = '';
+            _filterState.dateTo = '';
+            document.getElementById('filter-date-from').value = '';
+            document.getElementById('filter-date-to').value = '';
+            document.querySelectorAll('.filter-preset-btn').forEach(b => b.classList.remove('active'));
+          } else if (key === 'dateFrom') {
+            _filterState.dateFrom = '';
+            document.getElementById('filter-date-from').value = '';
+          } else if (key === 'dateTo') {
+            _filterState.dateTo = '';
+            document.getElementById('filter-date-to').value = '';
+          } else if (key === 'type') {
+            _filterState.type = '';
+            document.getElementById('filter-type').value = '';
+          } else if (key === 'item') {
+            _filterState.item = '';
+            document.getElementById('filter-item').value = '';
+          } else if (key === 'status') {
+            _filterState.status = '';
+            document.getElementById('filter-status').value = '';
+          } else if (key === 'priority') {
+            _filterState.priority = '';
+            const pSel = document.getElementById('filter-priority');
+            if (pSel) pSel.value = '';
+          } else if (key === 'weekday') {
+            _filterState.weekday = '';
+            document.getElementById('filter-weekday').value = '';
+            document.querySelectorAll('.weekday-filter-btn').forEach(b => b.classList.remove('active'));
+            const allWeekday = document.querySelector('.weekday-filter-btn[data-weekday=""]');
+            if (allWeekday) allWeekday.classList.add('active');
+          } else if (key === 'place') {
+            _filterState.place = '';
+            document.getElementById('filter-place').value = '';
+          }
+          const hasFilter = Object.values(_filterState).some(v => v);
+          const toggle = document.getElementById('filter-toggle');
+          if (toggle) toggle.classList.toggle('active-filter', hasFilter);
+          renderActiveFilterSummary();
+          renderActiveTab();
+        };
+      });
+    }
+
+    function initFilterPanel() {
+      const toggle = document.getElementById('filter-toggle');
+      const panel = document.getElementById('filter-panel');
+      const applyBtn = document.getElementById('filter-apply');
+      const clearBtn = document.getElementById('filter-clear');
+      const clearTopBtn = document.getElementById('filter-clear-top');
+
+      if (toggle) {
+        toggle.addEventListener('click', () => {
+          panel.classList.toggle('visible');
+        });
+      }
+
+      // Time-range preset buttons
+      document.querySelectorAll('.filter-preset-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('.filter-preset-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+
+          const days = btn.dataset.days;
+          const dateFrom = document.getElementById('filter-date-from');
+          const dateTo = document.getElementById('filter-date-to');
+
+          if (days) {
+            const now = new Date();
+            const from = new Date(now);
+            from.setDate(from.getDate() - parseInt(days));
+            dateFrom.value = from.toLocaleDateString('en-CA');
+            dateTo.value = now.toLocaleDateString('en-CA');
+          } else {
+            dateFrom.value = '';
+            dateTo.value = '';
+          }
+        });
+      });
+
+      // Weekday filter buttons
+      document.querySelectorAll('.weekday-filter-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('.weekday-filter-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          document.getElementById('filter-weekday').value = btn.dataset.weekday;
+        });
+      });
+
+      const handleApply = () => {
+        _filterState = {
+          dateFrom: document.getElementById('filter-date-from').value,
+          dateTo: document.getElementById('filter-date-to').value,
+          type: document.getElementById('filter-type').value,
+          item: document.getElementById('filter-item').value,
+          status: document.getElementById('filter-status').value,
+          priority: document.getElementById('filter-priority') ? document.getElementById('filter-priority').value : '',
+          weekday: document.getElementById('filter-weekday').value,
+          place: document.getElementById('filter-place').value.trim().toLowerCase()
+        };
+
+        const hasFilter = Object.values(_filterState).some(v => v);
+        if (toggle) toggle.classList.toggle('active-filter', hasFilter);
+        
+        // On mobile, close panel; on desktop, keep it visible
+        if (window.innerWidth < 1024 && panel) {
+          panel.classList.remove('visible');
+        }
+
+        renderActiveFilterSummary();
+        renderActiveTab();
+      };
+
+      if (applyBtn) applyBtn.addEventListener('click', handleApply);
+
+      const handleClear = () => {
+        document.getElementById('filter-date-from').value = '';
+        document.getElementById('filter-date-to').value = '';
+        document.getElementById('filter-type').value = '';
+        document.getElementById('filter-item').value = '';
+        document.getElementById('filter-status').value = '';
+        if (document.getElementById('filter-priority')) document.getElementById('filter-priority').value = '';
+        document.getElementById('filter-weekday').value = '';
+        document.getElementById('filter-place').value = '';
+        document.querySelectorAll('.filter-preset-btn').forEach(b => b.classList.remove('active'));
+        const allPreset = document.querySelector('.filter-preset-btn[data-days=""]');
+        if (allPreset) allPreset.classList.add('active');
+
+        document.querySelectorAll('.weekday-filter-btn').forEach(b => b.classList.remove('active'));
+        const allWeekday = document.querySelector('.weekday-filter-btn[data-weekday=""]');
+        if (allWeekday) allWeekday.classList.add('active');
+
+        _filterState = {};
+        if (toggle) toggle.classList.remove('active-filter');
+        if (window.innerWidth < 1024 && panel) {
+          panel.classList.remove('visible');
+        }
+
+        renderActiveFilterSummary();
+        renderActiveTab();
+      };
+
+      if (clearBtn) clearBtn.addEventListener('click', handleClear);
+      if (clearTopBtn) clearTopBtn.addEventListener('click', handleClear);
+    }
+
+    function applyFilters(logs) {
+      let filtered = logs;
+
+      if (_filterState.dateFrom) {
+        filtered = filtered.filter(l => l.date >= _filterState.dateFrom);
+      }
+      if (_filterState.dateTo) {
+        filtered = filtered.filter(l => l.date <= _filterState.dateTo);
+      }
+      if (_filterState.type) {
+        if (_filterState.type === 'growth') {
+          filtered = filtered.filter(l => {
+            if (l.type !== 'Habit') return false;
+            const h = _cachedHabits.find(hi => hi.name === l.name);
+            return (l.behaviorType && l.behaviorType !== 'Bad') || (h && h.behaviorType !== 'Bad') || (!l.behaviorType && !h);
+          });
+        } else if (_filterState.type === 'quit') {
+          filtered = filtered.filter(l => {
+            if (l.type !== 'Habit') return false;
+            const h = _cachedHabits.find(hi => hi.name === l.name);
+            return l.behaviorType === 'Bad' || (h && h.behaviorType === 'Bad');
+          });
+        } else if (_filterState.type === 'task') {
+          filtered = filtered.filter(l => l.type === 'Task' || l.type === 'Subtask' || l.type === 'NextAction');
+        }
+      }
+      if (_filterState.item) {
+        filtered = filtered.filter(l => l.name === _filterState.item || l.parentTaskName === _filterState.item);
+      }
+      if (_filterState.status) {
+        filtered = filtered.filter(l => l.status === _filterState.status);
+      }
+      if (_filterState.priority) {
+        filtered = filtered.filter(l => l.priority === _filterState.priority);
+      }
+      if (_filterState.weekday) {
+        const dayNum = parseInt(_filterState.weekday);
+        filtered = filtered.filter(l => {
+          const d = new Date(l.date);
+          return !isNaN(d) && d.getDay() === dayNum;
+        });
+      }
+      if (_filterState.place) {
+        filtered = filtered.filter(l => l.place && l.place.trim().toLowerCase().includes(_filterState.place));
+      }
+
+      return filtered;
+    }
+
+    // ============================================================
+    // Initialize
+    // ============================================================
     document.addEventListener('DOMContentLoaded', () => {
+      initReflectionPage();
+      initTabs();
+      initDrillDown();
+      initFilterPanel();
+
       document.getElementById('refresh-btn').addEventListener('click', async () => {
         document.getElementById('loading').classList.remove('hidden');
-        document.getElementById('insights').innerHTML = '';
+        document.getElementById('reflection-content').innerHTML = '';
+        document.getElementById('reflection-tabs').classList.add('hidden');
+        document.getElementById('filter-section').classList.add('hidden');
+        _drillDownItem = null;
+        hideDrillDown();
 
-        // On refresh, try to re-sync from Sheets if online
         if (navigator.onLine && API_URL) {
-          try {
-            await restoreFromSheets();
-          } catch (e) {
-            console.warn('Refresh sync failed:', e);
-          }
+          try { await restoreFromSheets(); } catch (e) { console.warn('Refresh sync failed:', e); }
         }
         initReflectionPage();
       });

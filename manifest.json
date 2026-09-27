@@ -1,12 +1,12 @@
 {
-  "name": "Behavior Log",
-  "short_name": "BLog",
-  "description": "Personal behavior logging and reflection app.",
+  "name": "PivotMe",
+  "short_name": "PivotMe",
+  "description": "Personal behavior, daily planning, and execution system.",
   "start_url": "./index.html",
   "display": "standalone",
   "orientation": "portrait",
-  "theme_color": "#000000",
-  "background_color": "#000000",
+  "theme_color": "#07090D",
+  "background_color": "#07090D",
   "icons": [
     {
       "src": "icon-192.png",

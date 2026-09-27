@@ -1,0 +1,1965 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Help — PivotMe</title>
+  <meta name="description" content="Complete in-app guide, behavioral model, privacy & data storage, and Google Apps Script setup for PivotMe.">
+
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#07090D">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="icon" href="icon-512.png">
+  <link rel="apple-touch-icon" href="icon-512.png">
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- ====== Header ====== -->
+  <header class="header container">
+    <div style="display: flex; gap: 10px; align-items: center;">
+      <h1 style="margin: 0; font-size: 1.25rem; font-weight: 700;">Help &amp; Guide</h1>
+      <span class="help-badge" style="margin-bottom: 0;">PivotMe</span>
+    </div>
+    <div style="display: flex; gap: 8px; align-items: center;">
+      <div id="sync-indicator" class="sync-indicator sync-online" title="Online — Synced">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+          <polyline points="22 4 12 14.01 9 11.01"/>
+        </svg>
+      </div>
+      <button id="install-btn" class="theme-toggle hidden" aria-label="Install App" title="Install App">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+        </svg>
+      </button>
+      <button id="settings-btn" class="theme-toggle" aria-label="API Settings" title="API Settings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>
+      </button>
+      <button id="theme-toggle" class="theme-toggle" aria-label="Toggle theme"></button>
+    </div>
+  </header>
+
+  <!-- ====== Settings Modal ====== -->
+  <div id="settings-overlay" class="modal-overlay">
+    <div class="modal">
+      <div class="modal-handle"></div>
+      <div class="modal-header">
+        <h2>Backend Settings</h2>
+        <button id="settings-close" class="modal-close" aria-label="Close">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+      <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 16px;">
+        Paste your Google Apps Script Web App URL below. This is stored securely in your local browser only.
+      </p>
+      <input type="password" id="api-url-input" class="notes-field" style="min-height: 48px; margin-bottom: 20px;" placeholder="https://script.google.com/macros/s/.../exec">
+      <button id="settings-save-btn" class="save-btn" style="margin-bottom: 12px;">Save Settings</button>
+
+      <!-- Help & Guides Section in Settings -->
+      <div style="margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--separator); margin-bottom: 16px;">
+        <h3 style="font-size: 0.92rem; font-weight: 700; color: var(--text); margin-bottom: 4px;">Help &amp; Guides</h3>
+        <p style="font-size: 0.8rem; color: var(--text-tertiary); margin-bottom: 12px;">
+          Learn the PivotMe behavioral loop, how Plan works, and setup instructions.
+        </p>
+        <a href="help.html" class="save-btn" style="display: flex; align-items: center; justify-content: center; gap: 8px; text-decoration: none; background: var(--surface-hover); color: var(--text); border: 1px solid var(--separator); font-size: 0.88rem; padding: 10px 16px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+            <line x1="12" y1="17" x2="12.01" y2="17"/>
+          </svg>
+          <span>Open Help</span>
+        </a>
+      </div>
+
+      <button id="settings-reset-btn" class="save-btn" style="background: var(--danger); font-size: 0.9rem; padding: 12px;">Reset App &amp; Clear Cache</button>
+    </div>
+  </div>
+
+  <!-- ====== Content ====== -->
+  <main class="container" style="padding-bottom: 90px;">
+
+    <!-- Quick Search Bar -->
+    <div class="help-search-container">
+      <div class="help-search-wrapper">
+        <svg class="help-search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"/>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input type="text" id="help-search-input" class="help-search-input" placeholder="Search guides, setup steps, habits, plan, troubleshooting..." autocomplete="off">
+      </div>
+    </div>
+
+    <!-- Mobile Horizontal Section Navigation -->
+    <nav class="help-nav-mobile" id="help-nav-mobile" aria-label="Guide topics">
+      <a href="#help-overview" class="help-nav-pill active">Overview</a>
+      <a href="#help-pivotme-loop" class="help-nav-pill">The Loop</a>
+      <a href="#help-tasks-vs-habits" class="help-nav-pill">Tasks vs Habits</a>
+      <a href="#help-plan" class="help-nav-pill">Plan &amp; Time-Blocking</a>
+      <a href="#help-execution" class="help-nav-pill">Focus &amp; Parallel</a>
+      <a href="#help-tasks" class="help-nav-pill">Tasks Guide</a>
+      <a href="#help-habits" class="help-nav-pill">Habits Guide</a>
+      <a href="#help-logging" class="help-nav-pill">Logging</a>
+      <a href="#help-reflection" class="help-nav-pill">Reflection</a>
+      <a href="#help-setup" class="help-nav-pill">Setup &amp; Sheet</a>
+      <a href="#help-security" class="help-nav-pill">Security &amp; Data</a>
+      <a href="#help-updating-script" class="help-nav-pill">Updating Script</a>
+      <a href="#help-app-updates" class="help-nav-pill">App Updates</a>
+      <a href="#help-hosting" class="help-nav-pill">Hosting</a>
+      <a href="#help-troubleshooting" class="help-nav-pill">Troubleshooting</a>
+    </nav>
+
+    <!-- 2-Column Documentation Layout (Desktop Sidebar + Main Content) -->
+    <div class="help-doc-layout">
+
+      <!-- Desktop Sticky Navigation Sidebar -->
+      <aside class="help-doc-sidebar" id="help-doc-sidebar" aria-label="Documentation navigation">
+        <div class="help-doc-group-title">The Foundation</div>
+        <a href="#help-overview" class="help-doc-link active">Overview &amp; Philosophy</a>
+        <a href="#help-pivotme-loop" class="help-doc-link">The Feedback Loop</a>
+        <a href="#help-tasks-vs-habits" class="help-doc-link">Tasks vs Habits</a>
+
+        <div class="help-doc-group-title">Execution System</div>
+        <a href="#help-plan" class="help-doc-link">Plan (Time-Blocking)</a>
+        <a href="#help-execution" class="help-doc-link">Focus vs Parallel</a>
+        <a href="#help-tasks" class="help-doc-link">Tasks &amp; Progressive Steps</a>
+        <a href="#help-habits" class="help-doc-link">Habits: Growth &amp; Quit</a>
+        <a href="#help-logging" class="help-doc-link">Logging Ground Truth</a>
+        <a href="#help-reflection" class="help-doc-link">Reflection &amp; Adjustment</a>
+
+        <div class="help-doc-group-title">Storage &amp; Setup</div>
+        <a href="#help-setup" class="help-doc-link">Setup &amp; Google Sheet</a>
+        <a href="#help-security" class="help-doc-link">Local-First &amp; Security</a>
+        <a href="#help-updating-script" class="help-doc-link">Updating Apps Script</a>
+        <a href="#help-app-updates" class="help-doc-link">App Updates vs Script</a>
+        <a href="#help-hosting" class="help-doc-link">Moving Hosting</a>
+
+        <div class="help-doc-group-title">Support</div>
+        <a href="#help-troubleshooting" class="help-doc-link">Troubleshooting</a>
+      </aside>
+
+      <!-- Main Guide Content Column -->
+      <div class="help-doc-content" id="help-doc-content">
+
+        <!-- ============================================================
+             1. Overview & Positioning
+             ============================================================ -->
+        <section id="help-overview" class="help-section">
+          <span class="help-badge">Product Positioning</span>
+          <h2>The PivotMe Execution Framework</h2>
+          <p class="help-section-desc">
+            <strong>PivotMe</strong> is for a person who is genuinely honest with themselves about how they use their time, what they do, what they avoid, and what actually happens.
+          </p>
+          <p class="help-section-desc" style="margin-top: 8px;">
+            It is not about pretending to be productive or collecting data for the sake of tracking. The purpose is to understand reality, learn from evidence, and make better adjustments. It records what actually happens without guilt, streaks, or penalties.
+          </p>
+
+          <div class="help-tip-box" style="margin-top: 18px; border-left-color: var(--accent);">
+            <strong style="color: var(--text);">Core Purpose:</strong>
+            <p style="margin: 6px 0 0 0; font-size: 0.88rem; line-height: 1.55; color: var(--text);">
+              &ldquo;PivotMe helps me build a system, execute it, record what actually happened, learn from my own evidence, and adjust the system honestly.&rdquo;
+            </p>
+          </div>
+
+          <div class="help-compare-grid" style="margin-top: 18px;">
+            <div class="help-compare-card is-card">
+              <div class="help-compare-title">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                What PivotMe Is
+              </div>
+              <ul class="help-compare-list">
+                <li>A deliberate personal system connecting planning, execution, logging, and reflection</li>
+                <li>An objective, factual record of your actual choices, timestamps, and real follow-through</li>
+                <li>A time-blocking engine where you commit finite hours rather than maintaining infinite wishlists</li>
+                <li>A private, local-first tool that stores data on your device and your personal Google Sheet</li>
+                <li>A diagnostic system that treats missed plans as evidence for adjustment rather than personal failure</li>
+              </ul>
+            </div>
+
+            <div class="help-compare-card is-not-card">
+              <div class="help-compare-title">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                What PivotMe Is NOT
+              </div>
+              <ul class="help-compare-list">
+                <li>Not just a habit tracker focused on fragile streaks</li>
+                <li>Not just a task manager or endless backlog checklist</li>
+                <li>Not just a calendar</li>
+                <li>Not just a timer</li>
+                <li>Not a motivation app or vanity dashboard</li>
+                <li>Not an AI that tells you what your personality or psychology is</li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        <!-- ============================================================
+             2. The PivotMe Feedback Loop & Architecture Definitions
+             ============================================================ -->
+        <section id="help-pivotme-loop" class="help-section">
+          <span class="help-badge">Core Engine</span>
+          <h2>The PivotMe Execution Loop</h2>
+          <p class="help-section-desc">
+            PivotMe operates around an ongoing 7-stage feedback loop designed to test intentions against real evidence:
+          </p>
+
+          <div style="margin: 16px 0; padding: 12px 16px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); font-weight: 700; font-size: 0.95rem; text-align: center; color: var(--accent); letter-spacing: 0.03em;">
+            DECIDE → PLAN → EXECUTE → LOG → REFLECT → ADJUST → REPEAT
+          </div>
+
+          <div class="help-flow-grid" style="margin-top: 18px;">
+            <div class="help-flow-step">
+              <div class="help-flow-num" style="background: var(--accent);">1</div>
+              <div class="help-flow-title">DECIDE</div>
+              <p class="help-flow-desc">Determine your growth habits, quit habits, and concrete tasks that align with your priorities.</p>
+            </div>
+            <div class="help-flow-step">
+              <div class="help-flow-num" style="background: var(--focus);">2</div>
+              <div class="help-flow-title">PLAN</div>
+              <p class="help-flow-desc">Allocate attention across the day, week, or month. Schedule dedicated time blocks on your timeline.</p>
+            </div>
+            <div class="help-flow-step">
+              <div class="help-flow-num" style="background: #14b8a6;">3</div>
+              <div class="help-flow-title">EXECUTE</div>
+              <p class="help-flow-desc">Carry out the planned work using Focus Mode or Parallel Mode.</p>
+            </div>
+            <div class="help-flow-step">
+              <div class="help-flow-num" style="background: var(--success);">4</div>
+              <div class="help-flow-title">LOG</div>
+              <p class="help-flow-desc">Record what actually happened, including useful context (before activity, physical state, mental state, exact time).</p>
+            </div>
+            <div class="help-flow-step">
+              <div class="help-flow-num" style="background: #8B5CF6;">5</div>
+              <div class="help-flow-title">REFLECT</div>
+              <p class="help-flow-desc">Analyze accumulated evidence and identify patterns from your own history without psychological conclusions.</p>
+            </div>
+            <div class="help-flow-step">
+              <div class="help-flow-num" style="background: var(--warning);">6</div>
+              <div class="help-flow-title">ADJUST</div>
+              <p class="help-flow-desc">Change the system based on what the evidence shows—calibrating fallbacks, replacements, step sizes, or schedules.</p>
+            </div>
+            <div class="help-flow-step">
+              <div class="help-flow-num" style="background: var(--text-tertiary);">7</div>
+              <div class="help-flow-title">REPEAT</div>
+              <p class="help-flow-desc">Run the adjusted system again. Consistent logging produces better evidence for the next cycle.</p>
+            </div>
+          </div>
+
+          <!-- Architecture & Core Concepts -->
+          <h3 style="font-size: 1.05rem; font-weight: 700; color: var(--text); margin: 28px 0 12px 0;">System Architecture &amp; Core Definitions</h3>
+          <p class="help-section-desc">
+            To keep logging lightweight and reflections accurate, PivotMe uses precise, practical concepts:
+          </p>
+
+          <div class="help-status-grid" style="grid-template-columns: 1fr 1fr; margin-top: 14px;">
+            <div class="help-status-card">
+              <strong style="color: var(--success); font-size: 0.9rem;">GROWTH HABIT</strong>
+              <p class="help-status-desc" style="margin-top: 4px;">A behavior you want to build or perform consistently.<br><strong>Outcomes:</strong> Done, Partially Done, Skipped.</p>
+            </div>
+            <div class="help-status-card">
+              <strong style="color: var(--accent); font-size: 0.9rem;">FALLBACK</strong>
+              <p class="help-status-desc" style="margin-top: 4px;">A reduced version of a Growth Habit used when the normal target cannot be completed (e.g. Target: Study for 2 hours; Fallback: Study for 20 minutes).</p>
+            </div>
+            <div class="help-status-card">
+              <strong style="color: var(--danger); font-size: 0.9rem;">QUIT HABIT</strong>
+              <p class="help-status-desc" style="margin-top: 4px;">A behavior you want to stop or reduce.<br><strong>Outcomes:</strong> Resisted, Partially Resisted, Done.</p>
+            </div>
+            <div class="help-status-card">
+              <strong style="color: #14b8a6; font-size: 0.9rem;">REPLACEMENT ACTIVITY</strong>
+              <p class="help-status-desc" style="margin-top: 4px;">An alternative activity configured for a Quit Habit and used when resisting the behavior.</p>
+            </div>
+            <div class="help-status-card">
+              <strong style="color: var(--text); font-size: 0.9rem;">TASK</strong>
+              <p class="help-status-desc" style="margin-top: 4px;">The outcome you want to accomplish.</p>
+            </div>
+            <div class="help-status-card">
+              <strong style="color: var(--warning); font-size: 0.9rem;">NEXT ACTION</strong>
+              <p class="help-status-desc" style="margin-top: 4px;">A small, concrete action that moves a Task forward.</p>
+            </div>
+            <div class="help-status-card">
+              <strong style="color: var(--accent); font-size: 0.9rem;">PLAN</strong>
+              <p class="help-status-desc" style="margin-top: 4px;">When you intend to give your attention to tasks and habits across the day, week, or month.</p>
+            </div>
+            <div class="help-status-card">
+              <strong style="color: var(--focus); font-size: 0.9rem;">FOCUS SESSION</strong>
+              <p class="help-status-desc" style="margin-top: 4px;">An optional focused execution session connected to planned work.</p>
+            </div>
+            <div class="help-status-card">
+              <strong style="color: var(--success); font-size: 0.9rem;">LOG</strong>
+              <p class="help-status-desc" style="margin-top: 4px;">Records what actually happened, including useful context.</p>
+            </div>
+            <div class="help-status-card">
+              <strong style="color: #8B5CF6; font-size: 0.9rem;">REFLECTION</strong>
+              <p class="help-status-desc" style="margin-top: 4px;">Analyzes accumulated evidence and identifies patterns from your own history.</p>
+            </div>
+            <div class="help-status-card" style="grid-column: 1 / -1;">
+              <strong style="color: var(--warning); font-size: 0.9rem;">ADJUST</strong>
+              <p class="help-status-desc" style="margin-top: 4px;">Changes the system based on what the evidence shows.</p>
+            </div>
+          </div>
+
+          <div class="help-tip-box" style="margin-top: 16px; border-left-color: var(--warning);">
+            <strong style="color: var(--text);">Task Execution Rule:</strong>
+            <p style="margin: 4px 0 0 0; font-size: 0.82rem; line-height: 1.5; color: var(--text-secondary);">
+              If a Task has Next Actions, you normally execute and log the <strong>Next Action</strong> rather than repeatedly logging the parent Task. The Task represents the desired overall outcome, while Next Actions are the concrete execution steps.
+            </p>
+          </div>
+        </section>
+
+        <!-- ============================================================
+             3. Tasks vs Habits: When to Use Which
+             ============================================================ -->
+        <section id="help-tasks-vs-habits" class="help-section">
+          <span class="help-badge">System Architecture</span>
+          <h2>Tasks vs. Habits: When to Use Which</h2>
+          <p class="help-section-desc">
+            A common failure in personal systems is confusing recurring routines with concrete project deliverables. PivotMe maintains a deliberate distinction between the two, while unifying them on the daily Plan timeline.
+          </p>
+
+          <div class="help-compare-grid" style="margin-top: 16px;">
+            <div class="help-compare-card" style="background: var(--bg-secondary);">
+              <h3 style="font-size: 0.95rem; font-weight: 700; color: var(--success); margin: 0 0 6px 0;">Habits (Behavioral Baselines)</h3>
+              <p style="font-size: 0.82rem; color: var(--text-secondary); margin: 0 0 10px 0; line-height: 1.5;">
+                Habits are recurring behavioral patterns and routines that repeat on regular schedules or specific triggers. Their purpose is to establish an automatic behavioral default.
+              </p>
+              <ul style="margin: 0; padding-left: 18px; font-size: 0.82rem; line-height: 1.55; color: var(--text-secondary);">
+                <li><strong>No final completion date:</strong> Practiced continuously (daily, weekdays, weekly).</li>
+                <li><strong>Two distinct categories:</strong> Positive routines to nurture (<em>Growth</em>) or impulses to eliminate (<em>Quit</em>).</li>
+                <li><strong>Examples:</strong> Morning meditation, 30-minute reading, gym workout, avoiding late-night social media bingeing.</li>
+              </ul>
+            </div>
+
+            <div class="help-compare-card" style="background: var(--bg-secondary);">
+              <h3 style="font-size: 0.95rem; font-weight: 700; color: var(--accent); margin: 0 0 6px 0;">Tasks (Bounded Deliverables)</h3>
+              <p style="font-size: 0.82rem; color: var(--text-secondary); margin: 0 0 10px 0; line-height: 1.5;">
+                Tasks are bounded, actionable outcomes or work items. Once their specific objective is accomplished, the task is finished and archived.
+              </p>
+              <ul style="margin: 0; padding-left: 18px; font-size: 0.82rem; line-height: 1.55; color: var(--text-secondary);">
+                <li><strong>Definite end-state:</strong> Has clear completion criteria.</li>
+                <li><strong>Structured execution:</strong> Broken down into sequential Next Actions you can execute immediately.</li>
+                <li><strong>Examples:</strong> Prepare Q3 presentation deck, file tax documents, repair kitchen faucet, write project proposal.</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="help-tip-box" style="margin-top: 16px;">
+            <strong>Where They Meet: The Plan Timeline</strong>
+            <p style="margin: 4px 0 0 0; font-size: 0.82rem; line-height: 1.5;">
+              You do not execute habits in a vacuum and tasks in a silo. Both demand slices of your finite daily attention. The <strong>Plan</strong> page is where both habits and tasks converge into a single, cohesive schedule for your day.
+            </p>
+          </div>
+        </section>
+
+        <!-- ============================================================
+             4. Plan: The Daily Time-Blocking Engine
+             ============================================================ -->
+        <section id="help-plan" class="help-section">
+          <span class="help-badge">Daily Engine</span>
+          <h2>Plan: The Time-Blocking Engine</h2>
+          <p class="help-section-desc">
+            <strong>Plan is where you decide when you intend to give your attention</strong> across the day, week, or month. It is not an infinite task backlog; it is a finite schedule of your attention.
+          </p>
+
+          <div class="help-compare-grid" style="margin-top: 16px;">
+            <div class="help-compare-card" style="background: var(--bg-secondary);">
+              <h3 style="font-size: 0.95rem; font-weight: 700; color: var(--accent); margin: 0 0 6px 0;">Why Planning is Separate from a Task List</h3>
+              <p style="font-size: 0.82rem; color: var(--text-secondary); margin: 0; line-height: 1.5;">
+                A task backlog is an inventory of things you <em>could</em> do. Looking at 30 tasks generates decision fatigue and delay. The Plan is an explicit commitment to what you will do <em>today</em> and <em>when</em>. If an item is not on the Plan, you are not working on it today.
+              </p>
+            </div>
+            <div class="help-compare-card" style="background: var(--bg-secondary);">
+              <h3 style="font-size: 0.95rem; font-weight: 700; color: var(--warning); margin: 0 0 6px 0;">Why Rescheduling is Tracked, Not Erased</h3>
+              <p style="font-size: 0.82rem; color: var(--text-secondary); margin: 0; line-height: 1.5;">
+                When an unexpected delay happens, tapping <em>Alter Plan</em> shifts the time slot and records the shift in a visible history trail (e.g. 09:00 → 11:30) with an optional reason. Erasing changes conceals systemic optimism; tracking shifts provides the exact diagnostic data needed to calibrate realistic planning.
+              </p>
+            </div>
+          </div>
+
+          <h3 style="font-size: 1.02rem; font-weight: 700; color: var(--text); margin: 22px 0 12px 0;">Key Capabilities of the Plan Page</h3>
+          <div class="help-status-grid" style="grid-template-columns: 1fr 1fr;">
+            <div class="help-status-card">
+              <strong style="font-size: 0.88rem; color: var(--text);">Dedicated Time Slots &amp; Presets</strong>
+              <p class="help-status-desc" style="margin-top: 4px;">Assign exact start and end times, or use quick presets (Now 30m, Now 1h, Morning 09:00, Afternoon 14:00, Evening 19:00) to schedule blocks in seconds.</p>
+            </div>
+            <div class="help-status-card">
+              <strong style="font-size: 0.88rem; color: var(--focus);">Execution Mode Selection</strong>
+              <p class="help-status-desc" style="margin-top: 4px;">Choose <strong>Focus Mode</strong> (default, single-tasking) or <strong>Parallel Mode</strong> (intentional background tracking) when adding items.</p>
+            </div>
+            <div class="help-status-card">
+              <strong style="font-size: 0.88rem; color: var(--accent);">Context &amp; Sub-Goal Notes</strong>
+              <p class="help-status-desc" style="margin-top: 4px;">Add optional context or a specific sub-goal to any planned block to clarify exactly what "done" means for that session.</p>
+            </div>
+            <div class="help-status-card">
+              <strong style="font-size: 0.88rem; color: var(--success);">Actual vs. Planned Comparison</strong>
+              <p class="help-status-desc" style="margin-top: 4px;">Completed plan cards display a direct comparison between your planned time and the actual logged execution timestamp and duration.</p>
+            </div>
+            <div class="help-status-card">
+              <strong style="font-size: 0.88rem; color: var(--text);">Plan History &amp; Weekly Review</strong>
+              <p class="help-status-desc" style="margin-top: 4px;">Preserves what was actually planned and what happened to those plans. Weekly review helps you understand your planning behavior over time.</p>
+            </div>
+            <div class="help-status-card">
+              <strong style="font-size: 0.88rem; color: var(--text);">Move to Tomorrow</strong>
+              <p class="help-status-desc" style="margin-top: 4px;">Cleanly defer uncompleted items to tomorrow's plan with a single tap when emergency priorities supersede your agenda.</p>
+            </div>
+          </div>
+
+          <div class="help-tip-box" style="margin-top: 16px;">
+            <strong style="color: var(--text);">Plan is Not Another Reflection System:</strong>
+            <p style="margin: 4px 0 0 0; font-size: 0.82rem; line-height: 1.5; color: var(--text-secondary);">
+              Plan manages when you intend to schedule your attention and tracks your planning behavior. Reflection analyzes empirical execution logs (what actually happened, context, and friction). They serve distinct, complementary roles in the loop.
+            </p>
+          </div>
+        </section>
+
+        <!-- ============================================================
+             5. Execution: Focus vs. Parallel
+             ============================================================ -->
+        <section id="help-execution" class="help-section">
+          <span class="help-badge">Execution Mastery</span>
+          <h2>Execution: Focus vs. Parallel</h2>
+          <p class="help-section-desc">
+            How you execute turns intent into action. PivotMe provides two execution modes and an optional focus session timer.
+          </p>
+
+          <div class="help-compare-grid" style="margin-top: 16px;">
+            <div class="help-compare-card" style="background: var(--bg-secondary); border-top: 3px solid var(--focus);">
+              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                <span class="plan-mode-badge focus">Focus Mode (Default)</span>
+              </div>
+              <h3 style="font-size: 0.95rem; font-weight: 700; color: var(--text); margin: 0 0 6px 0;">Single-Task Immersion</h3>
+              <p style="font-size: 0.82rem; color: var(--text-secondary); margin: 0; line-height: 1.5;">
+                Focus is the foundational default for all deep work, habits, and cognitive tasks. When a Focus block is active, the app highlights your current priority and de-emphasizes the rest of the day. Single-tasking eliminates context-switching penalties and ensures high-quality execution.
+              </p>
+            </div>
+
+            <div class="help-compare-card" style="background: var(--bg-secondary); border-top: 3px solid #14b8a6;">
+              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                <span class="plan-mode-badge parallel">Parallel Mode</span>
+              </div>
+              <h3 style="font-size: 0.95rem; font-weight: 700; color: var(--text); margin: 0 0 6px 0;">Intentional Background Tracking</h3>
+              <p style="font-size: 0.82rem; color: var(--text-secondary); margin: 0; line-height: 1.5;">
+                Parallel execution is permitted only for activities that naturally do not compete for active cognitive attention—such as running a washing machine while reading, or listening to an educational podcast while on a walk. <em>Multitasking on deep work is an illusion; parallel mode should be intentional, rare, and restricted to passive processes.</em>
+              </p>
+            </div>
+          </div>
+
+          <div class="help-tip-box" style="margin-top: 16px; border-left-color: var(--focus);">
+            <strong style="color: var(--focus);">The Focus Execution Session (Optional):</strong>
+            <p style="margin: 4px 0 0 0; font-size: 0.82rem; line-height: 1.5; color: var(--text-secondary);">
+              Starting work can have friction. The built-in stopwatch timer anchors your attention on the current block as an optional focused execution session. Using the timer is completely optional—you can always log directly when finished. When you do use it, tapping <em>Finish &amp; Log</em> records your actual duration and timestamp directly into your ground-truth logs.
+            </p>
+          </div>
+        </section>
+
+        <!-- ============================================================
+             6. Tasks Guide & Progressive Execution
+             ============================================================ -->
+        <section id="help-tasks" class="help-section">
+          <span class="help-badge">Tasks Guide</span>
+          <h2>Tasks &amp; Progressive Execution</h2>
+          <p class="help-section-desc">
+            Tasks in PivotMe keep execution concrete by focusing on outcomes and next actions. You do not have to map out a complex project hierarchy before taking action.
+          </p>
+
+          <!-- Core Concepts: Task vs Next Action -->
+          <h3 style="font-size: 1.02rem; font-weight: 700; color: var(--text); margin: 24px 0 12px 0;">Task vs Next Action</h3>
+          <div class="help-status-grid" style="grid-template-columns: 1fr 1fr; gap: 14px;">
+            <div class="help-status-card" style="border-top: 3px solid var(--accent);">
+              <strong style="font-size: 0.92rem; color: var(--accent);">TASK</strong>
+              <p class="help-status-desc" style="margin-top: 6px;">The overall outcome you want to accomplish (e.g. <em>"Build my portfolio website"</em> or <em>"Learning web development"</em>). Holds the deadline, priority, and target objective.</p>
+            </div>
+            <div class="help-status-card" style="border-top: 3px solid var(--focus);">
+              <strong style="font-size: 0.92rem; color: var(--focus);">NEXT ACTION</strong>
+              <p class="help-status-desc" style="margin-top: 6px;">A small, concrete step you can take to move the Task forward (e.g. <em>"Sketch the homepage"</em> or <em>"Complete DOM lesson"</em>). Executable in a single focused session.</p>
+            </div>
+          </div>
+
+          <!-- Concrete Example -->
+          <div style="background: var(--surface); border: 1px solid var(--separator); border-radius: var(--radius-sm); padding: 16px; margin-top: 16px;">
+            <p style="font-size: 0.85rem; font-weight: 700; color: var(--text); margin: 0 0 8px 0;">Example Structure:</p>
+            <div style="font-size: 0.84rem; line-height: 1.6; color: var(--text-secondary);">
+              <strong style="color: var(--text);">Task:</strong> Build my portfolio website<br>
+              <strong style="color: var(--accent);">Next Actions:</strong>
+              <ul style="margin: 6px 0 0 18px; padding: 0;">
+                <li>Sketch the homepage</li>
+                <li>Create the HTML structure</li>
+                <li>Build the navigation</li>
+                <li>Add the projects section</li>
+              </ul>
+            </div>
+            <p style="font-size: 0.82rem; color: var(--text-tertiary); margin: 12px 0 0 0; font-style: italic;">
+              "You do not need to plan everything before starting. Create one Next Action you can do now and add more as the work becomes clearer."
+            </p>
+          </div>
+
+          <!-- Execution Paths -->
+          <h3 style="font-size: 1.02rem; font-weight: 700; color: var(--text); margin: 26px 0 12px 0;">Execution &amp; Logging Paths</h3>
+          <div style="background: var(--surface); border: 1px solid var(--separator); border-radius: var(--radius-sm); padding: 16px; margin-top: 12px;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; font-size: 0.84rem;">
+              <div style="padding: 12px; background: var(--bg-secondary); border-radius: var(--radius-xs);">
+                <strong style="color: var(--accent); font-size: 0.88rem;">Simple Task:</strong>
+                <div style="font-size: 0.95rem; font-weight: 700; margin: 4px 0 6px 0; color: var(--text);">Task → Log Task</div>
+                <div style="color: var(--text-secondary); font-size: 0.78rem;">For standalone deliverables with no separate actions. Directly log what happened when done.</div>
+              </div>
+              <div style="padding: 12px; background: var(--bg-secondary); border-radius: var(--radius-xs);">
+                <strong style="color: var(--focus); font-size: 0.88rem;">Task with Next Actions:</strong>
+                <div style="font-size: 0.95rem; font-weight: 700; margin: 4px 0 6px 0; color: var(--text);">Task → Next Action → Log Next Action</div>
+                <div style="color: var(--text-secondary); font-size: 0.78rem;">The Next Action is the execution unit. Execute and log the step directly without having to log the parent Task every time.</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="help-tip-box" style="margin-top: 16px; border-left-color: var(--accent);">
+            <strong style="color: var(--text);">Evidence for Reflection:</strong>
+            <p style="margin: 4px 0 0 0; font-size: 0.82rem; line-height: 1.5; color: var(--text-secondary);">
+              Logging records what actually happened (Done, Partially Done, Skipped, physical and mental states, alternative activities, interruptions). This gives Reflection factual evidence to uncover real execution patterns without psychological guesswork.
+            </p>
+          </div>
+
+          <!-- Consolidated Outcomes & Preset Logging -->
+          <h3 style="font-size: 1.02rem; font-weight: 700; color: var(--text); margin: 26px 0 12px 0;">Logging &amp; Preset Suggestions</h3>
+          <div class="help-status-grid" style="grid-template-columns: 1fr 1fr; margin-top: 12px;">
+            <div class="help-status-card">
+              <strong style="font-size: 0.88rem; color: var(--accent);">Strictly Three Ground-Truth Outcomes</strong>
+              <p class="help-status-desc" style="margin-top: 4px;">Tasks and Next Actions log into strictly <strong>Done</strong>, <strong>Partially Done</strong>, or <strong>Skipped</strong>. Every session records actual behavioral ground truth without guilt or punitive penalties.</p>
+            </div>
+            <div class="help-status-card">
+              <strong style="font-size: 0.88rem; color: #14b8a6;">Preset Chips &amp; Custom Input</strong>
+              <p class="help-status-desc" style="margin-top: 4px;">Log quickly by tapping contextual preset chips for Physical State, Mental State, Location, and Activity Before. Frequent entries automatically float to the front, and custom free text is always supported.</p>
+            </div>
+          </div>
+
+          <!-- Non-Destructive Deadlines & History -->
+          <h3 style="font-size: 1.02rem; font-weight: 700; color: var(--text); margin: 26px 0 12px 0;">Non-Destructive Deadlines &amp; Task Actions</h3>
+          <div class="help-status-grid" style="grid-template-columns: 1fr 1fr; margin-top: 12px;">
+            <div class="help-status-card">
+              <strong style="font-size: 0.88rem; color: var(--warning);">Deadline Extension Audit Trail</strong>
+              <p class="help-status-desc" style="margin-top: 4px;">Extend deadlines through the Task Actions card on the Task page or directly during Partial/Skipped logging. Your <strong>original deadline</strong> is permanently preserved, and every extension date with its reason is recorded in a transparent history audit.</p>
+            </div>
+            <div class="help-status-card">
+              <strong style="font-size: 0.88rem; color: var(--focus);">Remove After Completion</strong>
+              <p class="help-status-desc" style="margin-top: 4px;">When <em>"Remove after completion"</em> is enabled, completed tasks and next actions are hidden from active views to keep focus uncluttered, while remaining fully accessible and restorable under "Show Completed".</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- ============================================================
+             7. Habits Guide: Growth vs. Quit
+             ============================================================ -->
+        <section id="help-habits" class="help-section">
+          <span class="help-badge">Habits Guide</span>
+          <h2>Habits: Growth, Quit &amp; Outcomes</h2>
+          <p class="help-section-desc">
+            PivotMe treats building positive behaviors and stopping destructive habits as distinct behavioral tracks, each with three explicit outcomes.
+          </p>
+
+          <div class="help-compare-grid" style="margin-top: 16px;">
+            <div class="help-compare-card" style="background: var(--bg-secondary);">
+              <h3 style="font-size: 0.95rem; font-weight: 700; color: var(--success); margin: 0 0 6px 0;">Growth Habits</h3>
+              <p style="font-size: 0.82rem; color: var(--text-secondary); margin: 0 0 10px 0;">Behaviors you want to build or perform consistently (e.g. Study, Workout, Reading).</p>
+              <div class="help-status-grid" style="grid-template-columns: 1fr; margin: 0;">
+                <div class="help-status-card">
+                  <strong style="color: var(--success); font-size: 0.84rem;">Done:</strong> Completed target action as planned.
+                </div>
+                <div class="help-status-card">
+                  <strong style="color: var(--accent); font-size: 0.84rem;">Partially Done:</strong> Made partial progress, with the option to log a configured Fallback action.
+                </div>
+                <div class="help-status-card">
+                  <strong style="color: var(--warning); font-size: 0.84rem;">Skipped:</strong> Did another activity instead of the planned habit.
+                </div>
+              </div>
+              <div style="margin-top: 10px; font-size: 0.8rem; color: var(--text-secondary); line-height: 1.45;">
+                <strong style="color: var(--text);">Fallback Action:</strong> A reduced version of the same habit configured directly in the habit and shown naturally during "Partially Done" logging.
+              </div>
+            </div>
+
+            <div class="help-compare-card" style="background: var(--bg-secondary);">
+              <h3 style="font-size: 0.95rem; font-weight: 700; color: var(--danger); margin: 0 0 6px 0;">Quit Habits</h3>
+              <p style="font-size: 0.82rem; color: var(--text-secondary); margin: 0 0 10px 0;">Behaviors you want to stop or reduce (e.g. Late Night Scrolling, Mindless Snacking).</p>
+              <div class="help-status-grid" style="grid-template-columns: 1fr; margin: 0;">
+                <div class="help-status-card">
+                  <strong style="color: var(--success); font-size: 0.84rem;">Resisted:</strong> Urge resisted, with quick selection of configured Replacement Activity.
+                </div>
+                <div class="help-status-card">
+                  <strong style="color: var(--warning); font-size: 0.84rem;">Partially Resisted:</strong> Delayed or partially curbed the urge.
+                </div>
+                <div class="help-status-card">
+                  <strong style="color: var(--danger); font-size: 0.84rem;">Done:</strong> The unwanted quit behavior occurred.
+                </div>
+              </div>
+              <div style="margin-top: 10px; font-size: 0.8rem; color: var(--text-secondary); line-height: 1.45;">
+                <strong style="color: var(--text);">Replacement Activity:</strong> The constructive alternative configured for a Quit Habit and made accessible during Resisted and Partially Resisted logging.
+              </div>
+            </div>
+          </div>
+
+          <div class="help-tip-box" style="margin-top: 16px;">
+            <strong>Objective Outcomes Without Moralizing:</strong>
+            <p style="margin: 4px 0 0 0; font-size: 0.82rem; line-height: 1.5; color: var(--text-secondary);">
+              Quit Habits use three factual outcomes: <em>Resisted</em>, <em>Partially Resisted</em>, and <em>Done</em> (the behavior occurred). Recording that a quit behavior occurred is neutral empirical data needed to detect preceding activities and physical/mental states, not an invitation for guilt or failure spirals.
+            </p>
+          </div>
+        </section>
+
+        <!-- ============================================================
+             8. Logging Ground Truth
+             ============================================================ -->
+        <section id="help-logging" class="help-section">
+          <span class="help-badge">Data Integrity</span>
+          <h2>Logging: Ground Truth &amp; Context</h2>
+          <p class="help-section-desc">
+            A plan is a statement of intent; a log records what actually happened. The value of PivotMe comes from being honest and consistent with logging. Better evidence produces more useful reflection.
+          </p>
+
+          <div style="margin: 16px 0; padding: 12px 16px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 0.85rem; line-height: 1.6; color: var(--text);">
+            <strong style="color: var(--accent); display: block; margin-bottom: 4px;">What Logging Captures:</strong>
+            <p style="margin: 4px 0 0 0; font-size: 0.82rem; color: var(--text-secondary); line-height: 1.55;">
+              Preset choices make logging fast, while custom answers allow more detail. Logging can capture what happened, what happened before, physical state, mental state, place, time, interruptions, and what you engaged in instead when something was skipped.
+            </p>
+          </div>
+
+          <div class="help-compare-grid" style="margin-top: 16px;">
+            <div class="help-compare-card" style="background: var(--bg-secondary);">
+              <h3 style="font-size: 0.95rem; font-weight: 700; color: var(--accent); margin: 0 0 6px 0;">Growth Habit Evidence</h3>
+              <ul style="margin: 0; padding-left: 18px; font-size: 0.82rem; line-height: 1.6; color: var(--text-secondary);">
+                <li><strong>Done:</strong> What did you do? What did you do before? Physical state, mental state, exact date/time.</li>
+                <li><strong>Partially Done:</strong> What did you actually do? Fallback action indicator. What did you do before? Physical &amp; mental states.</li>
+                <li><strong>Skipped:</strong> What did you do instead? What did you do before? Physical &amp; mental states.</li>
+              </ul>
+            </div>
+            <div class="help-compare-card" style="background: var(--bg-secondary);">
+              <h3 style="font-size: 0.95rem; font-weight: 700; color: var(--success); margin: 0 0 6px 0;">Quit Habit Evidence</h3>
+              <ul style="margin: 0; padding-left: 18px; font-size: 0.82rem; line-height: 1.6; color: var(--text-secondary);">
+                <li><strong>Resisted:</strong> What did you do instead? Replacement action selector. What happened before? Physical &amp; mental states.</li>
+                <li><strong>Partially Resisted:</strong> What happened / what did you actually do? Replacement indicator. Before activity, physical &amp; mental states.</li>
+                <li><strong>Done:</strong> What did you do? What happened before? Physical state, mental state, exact date/time.</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="help-tip-box" style="margin-top: 16px; border-left-color: var(--accent);">
+            <strong style="color: var(--text);">Flexibility in Logging:</strong>
+            <p style="margin: 4px 0 0 0; font-size: 0.82rem; line-height: 1.5; color: var(--text-secondary);">
+              You do not need to record every detail every time. Tapping quick preset chips takes only seconds. Add custom detail when something unexpected happens or when friction is notable. Any honest record of reality is far more valuable than skipping logging.
+            </p>
+          </div>
+        </section>
+
+        <!-- ============================================================
+             9. Reflection & System Calibration
+             ============================================================ -->
+        <section id="help-reflection" class="help-section">
+          <span class="help-badge">Reflection Guide</span>
+          <h2>Reflection: Patterns &amp; System Calibration</h2>
+          <p class="help-section-desc">
+            Reflection analyzes accumulated evidence and identifies patterns from your own history. The value comes from being honest and consistent with logging: better evidence produces more useful reflection.
+          </p>
+
+          <div class="help-status-grid" style="grid-template-columns: 1fr 1fr; margin-top: 16px;">
+            <div class="help-status-card">
+              <strong style="font-size: 0.85rem; color: var(--success);">"What helps me?"</strong>
+              <p class="help-status-desc" style="margin-top: 4px;">Identifies environments, times of day, and weekdays where your completion rate is highest.</p>
+            </div>
+            <div class="help-status-card">
+              <strong style="font-size: 0.85rem; color: var(--danger);">"What gets in my way?"</strong>
+              <p class="help-status-desc" style="margin-top: 4px;">Highlights recurring friction triggers (e.g. fatigue, phone notifications, unplanned meetings).</p>
+            </div>
+            <div class="help-status-card">
+              <strong style="font-size: 0.85rem; color: var(--accent);">Multi-Dimensional Drill-Down</strong>
+              <p class="help-status-desc" style="margin-top: 4px;">Filter your execution logs by date range, specific weekday, habit/task, location, or status to isolate specific bottlenecks.</p>
+            </div>
+            <div class="help-status-card">
+              <strong style="font-size: 0.85rem; color: var(--warning);">Adjust Systems, Not Blame</strong>
+              <p class="help-status-desc" style="margin-top: 4px;">When an item struggles, do not blame yourself. Shrink the step size, change the execution time, or redesign the environment.</p>
+            </div>
+          </div>
+
+          <div class="help-tip-box" style="margin-top: 16px;">
+            <strong>Correlation vs. Causation: Strict Empirical Safeguards</strong>
+            <p style="margin: 4px 0 0 0; font-size: 0.82rem; line-height: 1.5; color: var(--text-secondary);">
+              PivotMe does not claim that a correlation is automatically a cause. Reflections should be treated as observations from your own history, not absolute psychological conclusions. The system identifies empirical associations in your recorded data (requiring a minimum sample size of n &ge; 5) so you can make informed adjustments to your system honestly.
+            </p>
+          </div>
+        </section>
+
+        <!-- ============================================================
+             7. Setup Guide & Google Sheet
+             ============================================================ -->
+        <section id="help-setup" class="help-section">
+          <span class="help-badge">Storage &amp; Connection</span>
+          <h2>Setup &amp; Personal Google Sheet Connection</h2>
+          <p class="help-section-desc">
+            Connect your personal Google Sheet in 9 simple steps to enable automatic cloud backup and cross-device sync.
+          </p>
+
+          <div class="help-step-timeline">
+            <div class="help-step-item">
+              <div class="help-step-badge">1</div>
+              <div class="help-step-content">
+                <h3>Create a Google Sheet</h3>
+                <p>Open <a href="https://sheets.new" target="_blank" rel="noopener" style="color: var(--accent); text-decoration: underline;">sheets.new</a> in your browser. Name the sheet <strong>PivotMe Data</strong> (or any name you prefer).</p>
+              </div>
+            </div>
+
+            <div class="help-step-item">
+              <div class="help-step-badge">2</div>
+              <div class="help-step-content">
+                <h3>Open Apps Script</h3>
+                <p>Inside your sheet, click top menu: <strong>Extensions</strong> → <strong>Apps Script</strong>. This opens the script editor bound to your sheet.</p>
+              </div>
+            </div>
+
+            <div class="help-step-item">
+              <div class="help-step-badge">3</div>
+              <div class="help-step-content">
+                <h3>Paste the Generic Script</h3>
+                <p>Erase any default code in <code>Code.gs</code>, copy the full script provided below using the <strong>Copy Code</strong> button, and paste it into the editor.</p>
+              </div>
+            </div>
+
+            <div class="help-step-item">
+              <div class="help-step-badge">4</div>
+              <div class="help-step-content">
+                <h3>Save the Project</h3>
+                <p>Press <strong>Ctrl + S</strong> (or <strong>Cmd + S</strong> on Mac) or click the Save floppy disk icon.</p>
+              </div>
+            </div>
+
+            <div class="help-step-item">
+              <div class="help-step-badge">5</div>
+              <div class="help-step-content">
+                <h3>Deploy as Web App</h3>
+                <p>Click top-right blue <strong>Deploy</strong> → <strong>New deployment</strong>. Choose type <strong>Web app</strong>. Set <em>Execute as</em>: <strong>Me</strong>, and <em>Who has access</em>: <strong>Anyone</strong>.</p>
+              </div>
+            </div>
+
+            <div class="help-step-item">
+              <div class="help-step-badge">6</div>
+              <div class="help-step-content">
+                <h3>Authorize Permissions</h3>
+                <p>Click <strong>Deploy</strong>. Select your Google account → click <strong>Advanced</strong> → click <strong>Go to PivotMe Backend (unsafe)</strong> → click <strong>Allow</strong>. <em>(Google displays this standard warning for all self-deployed scripts.)</em></p>
+              </div>
+            </div>
+
+            <div class="help-step-item">
+              <div class="help-step-badge">7</div>
+              <div class="help-step-content">
+                <h3>Copy the Web App URL</h3>
+                <p>Copy the generated URL ending in <code>/exec</code> (not <code>/edit</code>).</p>
+              </div>
+            </div>
+
+            <div class="help-step-item">
+              <div class="help-step-badge">8</div>
+              <div class="help-step-content">
+                <h3>Connect in PivotMe Settings</h3>
+                <p>Click the gear icon in the header or the shortcut button below to paste your URL into Settings.</p>
+                <button type="button" id="open-settings-shortcut" class="save-btn" style="max-width: 240px; padding: 10px 14px; font-size: 0.85rem; margin-top: 8px;">
+                  Open Settings Modal
+                </button>
+              </div>
+            </div>
+
+            <div class="help-step-item">
+              <div class="help-step-badge">9</div>
+              <div class="help-step-content">
+                <h3>Use Test Connection</h3>
+                <p>Use the live diagnostic tool below to verify that your connection is functioning correctly.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Interactive Test Connection Widget -->
+          <div class="test-connection-widget">
+            <div class="test-conn-title">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                <polyline points="22 4 12 14.01 9 11.01"/>
+              </svg>
+              Test Connection
+            </div>
+            <p class="test-conn-sub">Test your Web App URL to ensure it responds to sync requests:</p>
+            <div class="test-conn-input-row">
+              <input type="text" id="test-conn-url" class="test-conn-input" placeholder="https://script.google.com/macros/s/.../exec">
+              <button type="button" id="test-conn-btn" class="test-conn-btn">Test Connection</button>
+            </div>
+            <div id="test-conn-result" class="test-conn-result"></div>
+          </div>
+
+          <!-- Apps Script Code Box Header -->
+          <div style="margin-top: 24px;">
+            <h3 style="font-size: 1rem; font-weight: 700; color: var(--text); margin: 0 0 6px 0;">Generic Google Apps Script Backend Code</h3>
+            <p style="font-size: 0.82rem; color: var(--text-secondary); margin: 0 0 10px 0;">Click Copy Code and paste into your Google Sheet's Apps Script editor (<code>Code.gs</code>):</p>
+          </div>
+
+          <div class="code-container">
+            <div class="code-header">
+              <span>appscript.gs (Google Apps Script)</span>
+              <button id="copy-script-btn" class="copy-btn" title="Copy complete script">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                </svg>
+                <span id="copy-btn-text">Copy Code</span>
+              </button>
+            </div>
+            <textarea id="apps-script-code" class="code-area" readonly spellcheck="false">// ============================================================
+// Behavior Log — Google Apps Script Backend
+// Deploy this as a Web App (Execute as: Me, Access: Anyone).
+// ============================================================
+
+/**
+ * Verifies if the required sheets and headers exist. 
+ * If they do not, it creates them automatically.
+ */
+function initializeSheetsIfNeeded() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  if (!ss) {
+    throw new Error(
+      &quot;Spreadsheet not found. Make sure this Apps Script was created from INSIDE your Google Sheet via &#x27;Extensions&#x27; -&gt; &#x27;Apps Script&#x27; (container-bound script). If you created it directly in Google Drive, it will not work.&quot;
+    );
+  }
+  
+  // 1. Setup &quot;Habits&quot; sheet (columns: Name, Time, Place, BehaviorType, Remind, Priority, PrevHabit, NextHabit)
+  var habitsSheet = ss.getSheetByName(&quot;Habits&quot;);
+  if (!habitsSheet) {
+    habitsSheet = ss.insertSheet(&quot;Habits&quot;);
+    habitsSheet.appendRow([&quot;Name&quot;, &quot;Time&quot;, &quot;Place&quot;, &quot;BehaviorType&quot;, &quot;Remind&quot;, &quot;Priority&quot;, &quot;PrevHabit&quot;, &quot;NextHabit&quot;]);
+    // Add default templates
+    habitsSheet.appendRow([&quot;Meditation&quot;, &quot;07:00 AM&quot;, &quot;Living Room&quot;, &quot;Good&quot;, &quot;Yes&quot;, &quot;To Do&quot;, &quot;&quot;, &quot;&quot;]);
+    habitsSheet.appendRow([&quot;Reading&quot;, &quot;09:00 PM&quot;, &quot;Bedroom&quot;, &quot;Good&quot;, &quot;No&quot;, &quot;Optional&quot;, &quot;&quot;, &quot;&quot;]);
+    habitsSheet.appendRow([&quot;Scrolling Social Media&quot;, &quot;10:00 PM&quot;, &quot;Bedroom&quot;, &quot;Bad&quot;, &quot;No&quot;, &quot;Don&#x27;t Do&quot;, &quot;&quot;, &quot;&quot;]);
+  } else {
+    // Check if BehaviorType column exists (Column D)
+    if (habitsSheet.getLastColumn() &lt; 4) {
+      habitsSheet.getRange(1, 4).setValue(&quot;BehaviorType&quot;);
+      var lastRow = habitsSheet.getLastRow();
+      if (lastRow &gt; 1) {
+        var range = habitsSheet.getRange(2, 4, lastRow - 1, 1);
+        var values = [];
+        for (var i = 0; i &lt; lastRow - 1; i++) {
+          values.push([&quot;Good&quot;]);
+        }
+        range.setValues(values);
+      }
+    }
+    // Check if Remind column exists (Column E)
+    if (habitsSheet.getLastColumn() &lt; 5) {
+      habitsSheet.getRange(1, 5).setValue(&quot;Remind&quot;);
+      var lastRow = habitsSheet.getLastRow();
+      if (lastRow &gt; 1) {
+        var range = habitsSheet.getRange(2, 5, lastRow - 1, 1);
+        var values = [];
+        for (var i = 0; i &lt; lastRow - 1; i++) {
+          values.push([&quot;No&quot;]);
+        }
+        range.setValues(values);
+      }
+    }
+    // v4 migration: Priority column (Column F)
+    if (habitsSheet.getLastColumn() &lt; 6) {
+      habitsSheet.getRange(1, 6).setValue(&quot;Priority&quot;);
+    }
+    // v4 migration: PrevHabit column (Column G)
+    if (habitsSheet.getLastColumn() &lt; 7) {
+      habitsSheet.getRange(1, 7).setValue(&quot;PrevHabit&quot;);
+    }
+    // v4 migration: NextHabit column (Column H)
+    if (habitsSheet.getLastColumn() &lt; 8) {
+      habitsSheet.getRange(1, 8).setValue(&quot;NextHabit&quot;);
+    }
+  }
+
+  // 2. Setup &quot;Tasks&quot; sheet (columns: Name, Time, Place, Remind, TaskDate, StartDate, Deadline, Subtasks, Priority, Recurrence, IsCompleted)
+  var tasksSheet = ss.getSheetByName(&quot;Tasks&quot;);
+  if (!tasksSheet) {
+    tasksSheet = ss.insertSheet(&quot;Tasks&quot;);
+    tasksSheet.appendRow([&quot;Name&quot;, &quot;Time&quot;, &quot;Place&quot;, &quot;Remind&quot;, &quot;TaskDate&quot;, &quot;StartDate&quot;, &quot;Deadline&quot;, &quot;Subtasks&quot;, &quot;Priority&quot;, &quot;Recurrence&quot;, &quot;IsCompleted&quot;]);
+    // Add default templates
+    tasksSheet.appendRow([&quot;Plan Day&quot;, &quot;08:00 AM&quot;, &quot;Desk&quot;, &quot;Yes&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;[]&quot;, &quot;To Do&quot;, &quot;[]&quot;, &quot;No&quot;]);
+    tasksSheet.appendRow([&quot;Check Emails&quot;, &quot;05:00 PM&quot;, &quot;Office&quot;, &quot;No&quot;, &quot;&quot;, &quot;&quot;, &quot;&quot;, &quot;[]&quot;, &quot;Optional&quot;, &quot;[]&quot;, &quot;No&quot;]);
+  } else {
+    // Check if Remind column exists (Column D)
+    if (tasksSheet.getLastColumn() &lt; 4) {
+      tasksSheet.getRange(1, 4).setValue(&quot;Remind&quot;);
+      var lastRow = tasksSheet.getLastRow();
+      if (lastRow &gt; 1) {
+        var range = tasksSheet.getRange(2, 4, lastRow - 1, 1);
+        var values = [];
+        for (var i = 0; i &lt; lastRow - 1; i++) {
+          values.push([&quot;No&quot;]);
+        }
+        range.setValues(values);
+      }
+    }
+    // Check if extra task date columns exist
+    if (tasksSheet.getLastColumn() &lt; 5) {
+      tasksSheet.getRange(1, 5).setValue(&quot;TaskDate&quot;);
+    }
+    if (tasksSheet.getLastColumn() &lt; 6) {
+      tasksSheet.getRange(1, 6).setValue(&quot;StartDate&quot;);
+    }
+    if (tasksSheet.getLastColumn() &lt; 7) {
+      tasksSheet.getRange(1, 7).setValue(&quot;Deadline&quot;);
+    }
+    if (tasksSheet.getLastColumn() &lt; 8) {
+      tasksSheet.getRange(1, 8).setValue(&quot;Subtasks&quot;);
+    }
+    // v4 migration: Priority (Column I)
+    if (tasksSheet.getLastColumn() &lt; 9) {
+      tasksSheet.getRange(1, 9).setValue(&quot;Priority&quot;);
+    }
+    // v4 migration: Recurrence (Column J)
+    if (tasksSheet.getLastColumn() &lt; 10) {
+      tasksSheet.getRange(1, 10).setValue(&quot;Recurrence&quot;);
+    }
+    // v4 migration: IsCompleted (Column K)
+    if (tasksSheet.getLastColumn() &lt; 11) {
+      tasksSheet.getRange(1, 11).setValue(&quot;IsCompleted&quot;);
+    }
+    // v5 migration: OriginalDeadline, IsTemporary, Objective (Columns L, M, N)
+    if (tasksSheet.getLastColumn() &lt; 12) {
+      tasksSheet.getRange(1, 12).setValue(&quot;OriginalDeadline&quot;);
+    }
+    if (tasksSheet.getLastColumn() &lt; 13) {
+      tasksSheet.getRange(1, 13).setValue(&quot;IsTemporary&quot;);
+    }
+    if (tasksSheet.getLastColumn() &lt; 14) {
+      tasksSheet.getRange(1, 14).setValue(&quot;Objective&quot;);
+    }
+  }
+
+  // 3. Setup &quot;Logs&quot; sheet (expanded with new behavioral fields)
+  var logsSheet = ss.getSheetByName(&quot;Logs&quot;);
+  if (!logsSheet) {
+    logsSheet = ss.insertSheet(&quot;Logs&quot;);
+    logsSheet.appendRow([
+      &quot;Date&quot;, &quot;Time&quot;, &quot;Type&quot;, &quot;Name&quot;, &quot;Status&quot;, &quot;Reason&quot;, &quot;Notes&quot;,
+      &quot;LoggedAt&quot;, &quot;ActivityDate&quot;, &quot;ActivityStartTime&quot;,
+      &quot;PreviousActivity&quot;, &quot;AlternativeActivity&quot;, &quot;Interruption&quot;,
+      &quot;Duration&quot;, &quot;Place&quot;, &quot;Priority&quot;
+    ]);
+  } else {
+    // v4 migration: add new columns if missing
+    var logCols = logsSheet.getLastColumn();
+    var newHeaders = [
+      [8, &quot;LoggedAt&quot;], [9, &quot;ActivityDate&quot;], [10, &quot;ActivityStartTime&quot;],
+      [11, &quot;PreviousActivity&quot;], [12, &quot;AlternativeActivity&quot;], [13, &quot;Interruption&quot;],
+      [14, &quot;Duration&quot;], [15, &quot;Place&quot;], [16, &quot;Priority&quot;],
+      [17, &quot;CompletedWork&quot;], [18, &quot;Outcome&quot;], [19, &quot;ProblemsFaced&quot;],
+      [20, &quot;RemainingWork&quot;], [21, &quot;Objective&quot;], [22, &quot;SubtaskName&quot;], [23, &quot;ParentTaskName&quot;],
+      [24, &quot;NewDeadline&quot;], [25, &quot;ExtensionReason&quot;]
+    ];
+    newHeaders.forEach(function(pair) {
+      if (logCols &lt; pair[0]) {
+        logsSheet.getRange(1, pair[0]).setValue(pair[1]);
+      }
+    });
+  }
+
+  // 4. Setup &quot;Reflections&quot; sheet (separate from Logs — stores analyzed reflection data)
+  var reflSheet = ss.getSheetByName(&quot;Reflections&quot;);
+  if (!reflSheet) {
+    reflSheet = ss.insertSheet(&quot;Reflections&quot;);
+    // Key = date|type|name — used for dedup. Strategy = how I succeeded. FailReason + BetterPlan for failures.
+    reflSheet.appendRow([&quot;Key&quot;, &quot;Date&quot;, &quot;Type&quot;, &quot;Name&quot;, &quot;Status&quot;, &quot;Strategy&quot;, &quot;FailReason&quot;, &quot;BetterPlan&quot;, &quot;EngagedActivity&quot;]);
+  } else {
+    // Check if column exists, if not, write header
+    if (reflSheet.getLastColumn() &lt; 9) {
+      reflSheet.getRange(1, 9).setValue(&quot;EngagedActivity&quot;);
+    }
+  }
+
+  // 5. Setup &quot;TodaysPlan&quot; sheet
+  var planSheet = ss.getSheetByName(&quot;TodaysPlan&quot;);
+  if (!planSheet) {
+    planSheet = ss.insertSheet(&quot;TodaysPlan&quot;);
+    planSheet.appendRow([&quot;ID&quot;, &quot;TargetName&quot;, &quot;TargetType&quot;, &quot;Date&quot;, &quot;OriginalStartTime&quot;, &quot;OriginalEndTime&quot;, &quot;CurrentStartTime&quot;, &quot;CurrentEndTime&quot;, &quot;Status&quot;, &quot;CompletionType&quot;, &quot;RescheduleCount&quot;, &quot;CreatedAt&quot;, &quot;CompletedAt&quot;, &quot;ChangeLog&quot;]);
+  }
+}
+
+/**
+ * Handle all GET requests.
+ * Supported actions: getHabits, getTasks, getLogs, saveLog, addItem, deleteItem, toggleReminder, updateItem, ping
+ */
+function doGet(e) {
+  try {
+    initializeSheetsIfNeeded();
+    var action = e.parameter.action;
+
+    if (action === &#x27;ping&#x27;)            return jsonResponse({ status: &#x27;ok&#x27;, message: &#x27;Connected to spreadsheet: &#x27; + SpreadsheetApp.getActiveSpreadsheet().getName() });
+    if (action === &#x27;getHabits&#x27;)       return getItems(&#x27;Habits&#x27;);
+    if (action === &#x27;getTasks&#x27;)        return getItems(&#x27;Tasks&#x27;);
+    if (action === &#x27;getLogs&#x27;)         return getLogs();
+    if (action === &#x27;saveLog&#x27;)         return saveLog(e.parameter);
+    if (action === &#x27;addItem&#x27;)         return addItem(e.parameter);
+    if (action === &#x27;deleteItem&#x27;)      return deleteItem(e.parameter);
+    if (action === &#x27;toggleReminder&#x27;)  return toggleReminder(e.parameter);
+    if (action === &#x27;updateItem&#x27;)      return updateItem(e.parameter);
+    if (action === &#x27;saveReflection&#x27;)  return saveReflection(e.parameter);
+    if (action === &#x27;getReflections&#x27;)  return getReflections();
+    if (action === &#x27;savePlanItem&#x27;)    return savePlanItem(e.parameter);
+    if (action === &#x27;getPlanItems&#x27;)    return getPlanItems();
+
+    return jsonResponse({ error: &#x27;Unknown action: &#x27; + action });
+  } catch (err) {
+    return jsonResponse({ error: err.message || err.toString() });
+  }
+}
+
+/**
+ * Also handle POST (in case the client sends POST).
+ * Parses the JSON body and delegates to the same handlers.
+ */
+function doPost(e) {
+  try {
+    initializeSheetsIfNeeded();
+    var payload = JSON.parse(e.postData.contents);
+    var action  = payload.action;
+
+    if (action === &#x27;saveLog&#x27;)         return saveLog(payload);
+    if (action === &#x27;addItem&#x27;)         return addItem(payload);
+    if (action === &#x27;deleteItem&#x27;)      return deleteItem(payload);
+    if (action === &#x27;toggleReminder&#x27;)  return toggleReminder(payload);
+    if (action === &#x27;updateItem&#x27;)      return updateItem(payload);
+    if (action === &#x27;saveReflection&#x27;)  return saveReflection(payload);
+    if (action === &#x27;savePlanItem&#x27;)    return savePlanItem(payload);
+
+    return jsonResponse({ error: &#x27;Unknown action: &#x27; + action });
+  } catch (err) {
+    return jsonResponse({ error: err.message || err.toString() });
+  }
+}
+
+// ============================================================
+// Handlers
+// ============================================================
+
+/**
+ * Read all items (habits or tasks) from the named sheet.
+ * Updated to include new v4 fields (priority, chain, recurrence).
+ */
+function getItems(sheetName) {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sheetName);
+  var rows  = sheet.getDataRange().getValues();
+  var items = [];
+
+  // Skip header row (row 0)
+  for (var i = 1; i &lt; rows.length; i++) {
+    if (rows[i][0]) { // Only include rows with a name
+      var item = {
+        name:          rows[i][0].toString().trim(),
+        time:          rows[i][1] ? rows[i][1].toString().trim() : &#x27;&#x27;,
+        place:         rows[i][2] ? rows[i][2].toString().trim() : &#x27;&#x27;
+      };
+
+      if (sheetName === &#x27;Habits&#x27;) {
+        item.behaviorType = rows[i][3] ? rows[i][3].toString().trim() : &#x27;Good&#x27;;
+        item.remind       = rows[i][4] === &#x27;Yes&#x27;;
+        item.priority     = rows[i][5] ? rows[i][5].toString().trim() : &#x27;&#x27;;
+        item.prevHabit    = rows[i][6] ? rows[i][6].toString().trim() : &#x27;&#x27;;
+        item.nextHabit    = rows[i][7] ? rows[i][7].toString().trim() : &#x27;&#x27;;
+      } else {
+        // Tasks
+        item.remind       = rows[i][3] === &#x27;Yes&#x27;;
+        item.taskDate     = rows[i][4] ? formatDate(rows[i][4]) : &#x27;&#x27;;
+        item.startDate    = rows[i][5] ? formatDate(rows[i][5]) : &#x27;&#x27;;
+        item.deadline     = rows[i][6] ? formatDate(rows[i][6]) : &#x27;&#x27;;
+        item.subtasks     = rows[i][7] ? parseSubtasks(rows[i][7]) : [];
+        item.priority     = rows[i][8] ? rows[i][8].toString().trim() : &#x27;&#x27;;
+        item.recurrence   = rows[i][9] ? parseJSON(rows[i][9]) : [];
+        item.isCompleted  = rows[i][10] === &#x27;Yes&#x27;;
+        item.originalDeadline = rows[i][11] ? formatDate(rows[i][11]) : &#x27;&#x27;;
+        item.isTemporary  = rows[i][12] === &#x27;Yes&#x27;;
+        item.objective    = rows[i][13] ? rows[i][13].toString().trim() : &#x27;&#x27;;
+      }
+
+      items.push(item);
+    }
+  }
+
+  return jsonResponse({ status: &#x27;ok&#x27;, data: items });
+}
+
+/**
+ * Read all log entries from the Logs sheet.
+ * Updated to include new v4 behavioral fields.
+ */
+function getLogs() {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(&#x27;Logs&#x27;);
+  var rows  = sheet.getDataRange().getValues();
+  var logs  = [];
+
+  // Skip header row (row 0)
+  for (var i = 1; i &lt; rows.length; i++) {
+    if (rows[i][0]) {
+      logs.push({
+        date:                formatDate(rows[i][0]),
+        time:                rows[i][1] ? rows[i][1].toString().trim() : &#x27;&#x27;,
+        type:                rows[i][2] ? rows[i][2].toString().trim() : &#x27;&#x27;,
+        name:                rows[i][3] ? rows[i][3].toString().trim() : &#x27;&#x27;,
+        status:              rows[i][4] ? rows[i][4].toString().trim() : &#x27;&#x27;,
+        reason:              rows[i][5] ? rows[i][5].toString().trim() : &#x27;&#x27;,
+        notes:               rows[i][6] ? rows[i][6].toString().trim() : &#x27;&#x27;,
+        loggedAt:            rows[i][7] ? rows[i][7].toString().trim() : &#x27;&#x27;,
+        activityDate:        rows[i][8] ? formatDate(rows[i][8]) : &#x27;&#x27;,
+        activityStartTime:   rows[i][9] ? rows[i][9].toString().trim() : &#x27;&#x27;,
+        previousActivity:    rows[i][10] ? rows[i][10].toString().trim() : &#x27;&#x27;,
+        alternativeActivity: rows[i][11] ? rows[i][11].toString().trim() : &#x27;&#x27;,
+        interruption:        rows[i][12] ? rows[i][12].toString().trim() : &#x27;&#x27;,
+        duration:            rows[i][13] ? rows[i][13].toString().trim() : &#x27;&#x27;,
+        place:               rows[i][14] ? rows[i][14].toString().trim() : &#x27;&#x27;,
+        priority:            rows[i][15] ? rows[i][15].toString().trim() : &#x27;&#x27;,
+        completedWork:       rows[i][16] ? rows[i][16].toString().trim() : &#x27;&#x27;,
+        outcome:             rows[i][17] ? rows[i][17].toString().trim() : &#x27;&#x27;,
+        problemsFaced:       rows[i][18] ? rows[i][18].toString().trim() : &#x27;&#x27;,
+        remainingWork:       rows[i][19] ? rows[i][19].toString().trim() : &#x27;&#x27;,
+        objective:           rows[i][20] ? rows[i][20].toString().trim() : &#x27;&#x27;,
+        subtaskName:         rows[i][21] ? rows[i][21].toString().trim() : &#x27;&#x27;,
+        parentTaskName:      rows[i][22] ? rows[i][22].toString().trim() : &#x27;&#x27;
+      });
+    }
+  }
+
+  return jsonResponse({ status: &#x27;ok&#x27;, data: logs });
+}
+
+/**
+ * Append a new row to the Logs sheet.
+ * Updated to include new v4 behavioral fields.
+ * @param {Object} params — { date, time, type, name, status, reason, notes, loggedAt, activityDate, activityStartTime, previousActivity, alternativeActivity, interruption, duration, place, priority }
+ */
+function saveLog(params) {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(&#x27;Logs&#x27;);
+  sheet.appendRow([
+    params.date                || &#x27;&#x27;,
+    params.time                || &#x27;&#x27;,
+    params.type                || &#x27;&#x27;,
+    params.name                || &#x27;&#x27;,
+    params.status              || &#x27;&#x27;,
+    params.reason              || &#x27;&#x27;,
+    params.notes               || &#x27;&#x27;,
+    params.loggedAt            || &#x27;&#x27;,
+    params.activityDate        || &#x27;&#x27;,
+    params.activityStartTime   || &#x27;&#x27;,
+    params.previousActivity    || &#x27;&#x27;,
+    params.alternativeActivity || &#x27;&#x27;,
+    params.interruption        || &#x27;&#x27;,
+    params.duration            || &#x27;&#x27;,
+    params.place               || &#x27;&#x27;,
+    params.priority            || &#x27;&#x27;,
+    params.completedWork       || &#x27;&#x27;,
+    params.outcome             || &#x27;&#x27;,
+    params.problemsFaced       || &#x27;&#x27;,
+    params.remainingWork       || &#x27;&#x27;,
+    params.objective           || &#x27;&#x27;,
+    params.subtaskName         || &#x27;&#x27;,
+    params.parentTaskName      || &#x27;&#x27;,
+    params.newDeadline         || &#x27;&#x27;,
+    params.extensionReason     || &#x27;&#x27;
+  ]);
+
+  return jsonResponse({ status: &#x27;ok&#x27;, message: &#x27;Log saved&#x27; });
+}
+
+// ============================================================
+// Utilities
+// ============================================================
+
+/**
+ * Safely format a date value from Sheets.
+ * Sheets may store dates as Date objects or strings.
+ */
+function formatDate(value) {
+  if (value instanceof Date) {
+    var y = value.getFullYear();
+    var m = (&#x27;0&#x27; + (value.getMonth() + 1)).slice(-2);
+    var d = (&#x27;0&#x27; + value.getDate()).slice(-2);
+    return y + &#x27;-&#x27; + m + &#x27;-&#x27; + d;
+  }
+  return value ? value.toString().trim() : &#x27;&#x27;;
+}
+
+/**
+ * Return a JSON response with correct MIME type and CORS support.
+ */
+function jsonResponse(data) {
+  return ContentService
+    .createTextOutput(JSON.stringify(data))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+/**
+ * Add a new item to Habits or Tasks sheet.
+ * Updated to include v4 fields (priority, chain, recurrence).
+ */
+function addItem(params) {
+  var sheetName = params.type === &#x27;Habit&#x27; ? &#x27;Habits&#x27; : &#x27;Tasks&#x27;;
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sheetName);
+  var remindValue = (params.remind === &#x27;true&#x27; || params.remind === true) ? &#x27;Yes&#x27; : &#x27;No&#x27;;
+  if (sheetName === &#x27;Habits&#x27;) {
+    sheet.appendRow([
+      params.name         || &#x27;&#x27;,
+      params.time         || &#x27;&#x27;,
+      params.place        || &#x27;&#x27;,
+      params.behaviorType || &#x27;Good&#x27;,
+      remindValue,
+      params.priority     || &#x27;&#x27;,
+      params.prevHabit    || &#x27;&#x27;,
+      params.nextHabit    || &#x27;&#x27;
+    ]);
+  } else {
+    sheet.appendRow([
+      params.name         || &#x27;&#x27;,
+      params.time         || &#x27;&#x27;,
+      params.place        || &#x27;&#x27;,
+      remindValue,
+      params.taskDate     || &#x27;&#x27;,
+      params.startDate    || &#x27;&#x27;,
+      params.deadline     || &#x27;&#x27;,
+      params.subtasks     || &#x27;[]&#x27;,
+      params.priority     || &#x27;&#x27;,
+      params.recurrence   || &#x27;[]&#x27;,
+      (params.isCompleted === &#x27;true&#x27; || params.isCompleted === true) ? &#x27;Yes&#x27; : &#x27;No&#x27;,
+      params.originalDeadline || &#x27;&#x27;,
+      (params.isTemporary === &#x27;true&#x27; || params.isTemporary === true) ? &#x27;Yes&#x27; : &#x27;No&#x27;,
+      params.objective    || &#x27;&#x27;
+    ]);
+  }
+  return jsonResponse({ status: &#x27;ok&#x27;, message: &#x27;Item added&#x27; });
+}
+
+/**
+ * Find and delete a habit or task row by name.
+ */
+function deleteItem(params) {
+  var sheetName = params.type === &#x27;Habit&#x27; ? &#x27;Habits&#x27; : &#x27;Tasks&#x27;;
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sheetName);
+  var rows = sheet.getDataRange().getValues();
+  var targetName = (params.name || &#x27;&#x27;).toString().trim().toLowerCase();
+
+  // Search rows (skipping header row 0)
+  for (var i = 1; i &lt; rows.length; i++) {
+    var name = (rows[i][0] || &#x27;&#x27;).toString().trim().toLowerCase();
+    if (name === targetName) {
+      sheet.deleteRow(i + 1); // deleteRow takes 1-indexed row number
+      return jsonResponse({ status: &#x27;ok&#x27;, message: &#x27;Item deleted&#x27; });
+    }
+  }
+
+  return jsonResponse({ error: &#x27;Item not found in sheet: &#x27; + params.name });
+}
+
+/**
+ * Update an existing item&#x27;s fields (priority, chain links, recurrence, isCompleted, etc).
+ * Finds the row by name and updates columns in-place.
+ */
+function updateItem(params) {
+  var sheetName = params.type === &#x27;Habit&#x27; ? &#x27;Habits&#x27; : &#x27;Tasks&#x27;;
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sheetName);
+  var rows = sheet.getDataRange().getValues();
+  var targetName = (params.name || &#x27;&#x27;).toString().trim().toLowerCase();
+
+  for (var i = 1; i &lt; rows.length; i++) {
+    var name = (rows[i][0] || &#x27;&#x27;).toString().trim().toLowerCase();
+    if (name === targetName) {
+      var rowNum = i + 1; // 1-indexed
+
+      if (sheetName === &#x27;Habits&#x27;) {
+        // Update all writable columns (skip name in col A)
+        if (params.time !== undefined)         sheet.getRange(rowNum, 2).setValue(params.time);
+        if (params.place !== undefined)        sheet.getRange(rowNum, 3).setValue(params.place);
+        if (params.behaviorType !== undefined) sheet.getRange(rowNum, 4).setValue(params.behaviorType);
+        if (params.remind !== undefined)       sheet.getRange(rowNum, 5).setValue((params.remind === &#x27;true&#x27; || params.remind === true) ? &#x27;Yes&#x27; : &#x27;No&#x27;);
+        if (params.priority !== undefined)     sheet.getRange(rowNum, 6).setValue(params.priority);
+        if (params.prevHabit !== undefined)    sheet.getRange(rowNum, 7).setValue(params.prevHabit);
+        if (params.nextHabit !== undefined)    sheet.getRange(rowNum, 8).setValue(params.nextHabit);
+      } else {
+        // Tasks
+        if (params.time !== undefined)         sheet.getRange(rowNum, 2).setValue(params.time);
+        if (params.place !== undefined)        sheet.getRange(rowNum, 3).setValue(params.place);
+        if (params.remind !== undefined)       sheet.getRange(rowNum, 4).setValue((params.remind === &#x27;true&#x27; || params.remind === true) ? &#x27;Yes&#x27; : &#x27;No&#x27;);
+        if (params.taskDate !== undefined)     sheet.getRange(rowNum, 5).setValue(params.taskDate);
+        if (params.startDate !== undefined)    sheet.getRange(rowNum, 6).setValue(params.startDate);
+        if (params.deadline !== undefined)     sheet.getRange(rowNum, 7).setValue(params.deadline);
+        if (params.subtasks !== undefined)     sheet.getRange(rowNum, 8).setValue(params.subtasks);
+        if (params.priority !== undefined)     sheet.getRange(rowNum, 9).setValue(params.priority);
+        if (params.recurrence !== undefined)   sheet.getRange(rowNum, 10).setValue(params.recurrence);
+        if (params.isCompleted !== undefined)  sheet.getRange(rowNum, 11).setValue((params.isCompleted === &#x27;true&#x27; || params.isCompleted === true) ? &#x27;Yes&#x27; : &#x27;No&#x27;);
+        if (params.originalDeadline !== undefined) sheet.getRange(rowNum, 12).setValue(params.originalDeadline);
+        if (params.isTemporary !== undefined)  sheet.getRange(rowNum, 13).setValue((params.isTemporary === &#x27;true&#x27; || params.isTemporary === true) ? &#x27;Yes&#x27; : &#x27;No&#x27;);
+        if (params.objective !== undefined)    sheet.getRange(rowNum, 14).setValue(params.objective);
+      }
+
+      return jsonResponse({ status: &#x27;ok&#x27;, message: &#x27;Item updated&#x27; });
+    }
+  }
+
+  return jsonResponse({ error: &#x27;Item not found in sheet: &#x27; + params.name });
+}
+
+/**
+ * Save a reflection entry to the Reflections sheet.
+ * Server-side deduplication: skip if the same Key already exists.
+ * Key = date|type|name (e.g. &quot;2025-07-13|Habit|Meditation&quot;)
+ * @param {Object} params — { key, date, type, name, status, strategy, failReason, betterPlan }
+ */
+function saveReflection(params) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName(&#x27;Reflections&#x27;);
+  if (!sheet) {
+    initializeSheetsIfNeeded();
+    sheet = ss.getSheetByName(&#x27;Reflections&#x27;);
+  }
+
+  var keyToInsert = params.key || ((params.date || &#x27;&#x27;) + &#x27;|&#x27; + (params.type || &#x27;&#x27;) + &#x27;|&#x27; + (params.name || &#x27;&#x27;));
+
+  // Dedup check: scan Column A (Key) for existing match
+  var lastRow = sheet.getLastRow();
+  if (lastRow &gt; 1) {
+    var existingKeys = sheet.getRange(2, 1, lastRow - 1, 1).getValues();
+    for (var i = 0; i &lt; existingKeys.length; i++) {
+      if (existingKeys[i][0] === keyToInsert) {
+        // Already exists — do not write again
+        return jsonResponse({ status: &#x27;ok&#x27;, message: &#x27;Reflection already exists (dedup)&#x27; });
+      }
+    }
+  }
+
+  sheet.appendRow([
+    keyToInsert,
+    params.date       || &#x27;&#x27;,
+    params.type       || &#x27;&#x27;,
+    params.name       || &#x27;&#x27;,
+    params.status     || &#x27;&#x27;,
+    params.strategy   || &#x27;&#x27;,
+    params.failReason || &#x27;&#x27;,
+    params.betterPlan || &#x27;&#x27;,
+    params.engagedActivity || &#x27;&#x27;
+  ]);
+
+  return jsonResponse({ status: &#x27;ok&#x27;, message: &#x27;Reflection saved&#x27; });
+}
+
+/**
+ * Fetch all entries from the Reflections sheet.
+ * Returns: [{ key, date, type, name, status, strategy, failReason, betterPlan }]
+ */
+function getReflections() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName(&#x27;Reflections&#x27;);
+  if (!sheet || sheet.getLastRow() &lt;= 1) {
+    return jsonResponse({ status: &#x27;ok&#x27;, data: [] });
+  }
+
+  var rows = sheet.getDataRange().getValues();
+  var reflections = [];
+  for (var i = 1; i &lt; rows.length; i++) {
+    reflections.push({
+      key:        rows[i][0] ? rows[i][0].toString().trim() : &#x27;&#x27;,
+      date:       rows[i][1] ? rows[i][1].toString().trim() : &#x27;&#x27;,
+      type:       rows[i][2] ? rows[i][2].toString().trim() : &#x27;&#x27;,
+      name:       rows[i][3] ? rows[i][3].toString().trim() : &#x27;&#x27;,
+      status:     rows[i][4] ? rows[i][4].toString().trim() : &#x27;&#x27;,
+      strategy:   rows[i][5] ? rows[i][5].toString().trim() : &#x27;&#x27;,
+      failReason: rows[i][6] ? rows[i][6].toString().trim() : &#x27;&#x27;,
+      betterPlan: rows[i][7] ? rows[i][7].toString().trim() : &#x27;&#x27;,
+      engagedActivity: rows[i][8] ? rows[i][8].toString().trim() : &#x27;&#x27;
+    });
+  }
+  return jsonResponse({ status: &#x27;ok&#x27;, data: reflections });
+}
+
+/**
+ * Helper to safely parse subtasks JSON string.
+ */
+function parseSubtasks(val) {
+  if (!val) return [];
+  try {
+    return JSON.parse(val.toString());
+  } catch(e) {
+    return [];
+  }
+}
+
+/**
+ * Helper to safely parse any JSON string (for recurrence arrays, etc).
+ */
+function parseJSON(val) {
+  if (!val) return [];
+  try {
+    return JSON.parse(val.toString());
+  } catch(e) {
+    return [];
+  }
+}
+
+/**
+ * Handle saving a plan item.
+ * Creates it if the ID does not exist, updates it if it does.
+ */
+function savePlanItem(params) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName(&#x27;TodaysPlan&#x27;);
+  
+  if (!sheet) {
+    initializeSheetsIfNeeded();
+    sheet = ss.getSheetByName(&#x27;TodaysPlan&#x27;);
+  }
+
+  var id = params.id;
+  if (!id) return jsonResponse({ error: &#x27;Missing plan item ID&#x27; });
+
+  var lastRow = sheet.getLastRow();
+  var rowIndex = -1;
+
+  if (lastRow &gt; 1) {
+    var ids = sheet.getRange(2, 1, lastRow - 1, 1).getValues();
+    for (var i = 0; i &lt; ids.length; i++) {
+      if (ids[i][0] == id) {
+        rowIndex = i + 2;
+        break;
+      }
+    }
+  }
+
+  var rowData = [
+    id,
+    params.targetName || &#x27;&#x27;,
+    params.targetType || &#x27;&#x27;,
+    params.date || &#x27;&#x27;,
+    params.originalStartTime || &#x27;&#x27;,
+    params.originalEndTime || &#x27;&#x27;,
+    params.currentStartTime || &#x27;&#x27;,
+    params.currentEndTime || &#x27;&#x27;,
+    params.status || &#x27;&#x27;,
+    params.completionType || &#x27;&#x27;,
+    params.rescheduleCount || 0,
+    params.createdAt || &#x27;&#x27;,
+    params.completedAt || &#x27;&#x27;,
+    params.changeLog || &#x27;[]&#x27;
+  ];
+
+  if (rowIndex &gt; -1) {
+    sheet.getRange(rowIndex, 1, 1, rowData.length).setValues([rowData]);
+  } else {
+    sheet.appendRow(rowData);
+  }
+
+  return jsonResponse({ status: &#x27;ok&#x27;, message: &#x27;Plan item saved&#x27; });
+}
+
+/**
+ * Fetch all plan items from TodaysPlan sheet.
+ */
+function getPlanItems() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheetByName(&#x27;TodaysPlan&#x27;);
+  if (!sheet || sheet.getLastRow() &lt;= 1) {
+    return jsonResponse({ status: &#x27;ok&#x27;, data: [] });
+  }
+
+  var rows = sheet.getDataRange().getValues();
+  var items = [];
+  for (var i = 1; i &lt; rows.length; i++) {
+    items.push({
+      id: rows[i][0] ? rows[i][0].toString() : &#x27;&#x27;,
+      targetName: rows[i][1] ? rows[i][1].toString() : &#x27;&#x27;,
+      targetType: rows[i][2] ? rows[i][2].toString() : &#x27;&#x27;,
+      date: rows[i][3] ? rows[i][3].toString() : &#x27;&#x27;,
+      originalStartTime: rows[i][4] ? rows[i][4].toString() : &#x27;&#x27;,
+      originalEndTime: rows[i][5] ? rows[i][5].toString() : &#x27;&#x27;,
+      currentStartTime: rows[i][6] ? rows[i][6].toString() : &#x27;&#x27;,
+      currentEndTime: rows[i][7] ? rows[i][7].toString() : &#x27;&#x27;,
+      status: rows[i][8] ? rows[i][8].toString() : &#x27;&#x27;,
+      completionType: rows[i][9] ? rows[i][9].toString() : &#x27;&#x27;,
+      rescheduleCount: rows[i][10] ? parseInt(rows[i][10]) : 0,
+      createdAt: rows[i][11] ? rows[i][11].toString() : &#x27;&#x27;,
+      completedAt: rows[i][12] ? rows[i][12].toString() : &#x27;&#x27;,
+      changeLog: parseJSON(rows[i][13]),
+      synced: true // Set to true as it comes from the server
+    });
+  }
+  return jsonResponse({ status: &#x27;ok&#x27;, data: items });
+}
+</textarea>
+          </div>
+        </section>
+
+        <!-- ============================================================
+             8. Important Security Information
+             ============================================================ -->
+        <section id="help-security" class="help-section">
+          <span class="help-badge">Security &amp; Data</span>
+          <h2>Local-First Architecture &amp; Data Ownership</h2>
+          <p class="help-section-desc">
+            PivotMe is built with a transparent, local-first architecture. You own your data completely—there are no proprietary servers, tracking cookies, or walled gardens.
+          </p>
+
+          <div class="help-status-grid" style="grid-template-columns: 1fr 1fr; margin-top: 14px;">
+            <div class="help-status-card">
+              <strong style="font-size: 0.88rem; color: var(--accent);">Local-First Storage (IndexedDB)</strong>
+              <p class="help-status-desc" style="margin-top: 4px;">Every habit, task, plan, and log is stored instantly inside your browser's private IndexedDB database. The app works fully offline without any network connection.</p>
+            </div>
+            <div class="help-status-card">
+              <strong style="font-size: 0.88rem; color: var(--success);">Personal Google Sheets Cloud Sync</strong>
+              <p class="help-status-desc" style="margin-top: 4px;">When connected, data synchronizes directly with your personal Google Sheet via a script running in your Google account. Your data is readable in standard spreadsheet rows.</p>
+            </div>
+            <div class="help-status-card">
+              <strong style="font-size: 0.88rem; color: var(--focus);">Full JSON Export &amp; Import</strong>
+              <p class="help-status-desc" style="margin-top: 4px;">In the <strong>Settings</strong> modal, use <em>Export Data</em> to download a complete, unencrypted JSON backup of your entire database, or use <em>Import Data</em> to restore or migrate devices.</p>
+            </div>
+            <div class="help-status-card">
+              <strong style="font-size: 0.88rem; color: var(--danger);">Clear Data Options</strong>
+              <p class="help-status-desc" style="margin-top: 4px;">Settings provides clear, irreversible options to reset local storage, clear the service worker cache, or disconnect your Google Sheet whenever you choose.</p>
+            </div>
+          </div>
+
+          <div class="help-tip-box security" style="margin-top: 18px;">
+            <strong style="color: var(--danger);">Essential Security Rules:</strong>
+            <ul style="margin: 8px 0 0 0; padding-left: 18px; font-size: 0.82rem; line-height: 1.5;">
+              <li><strong>Never share your Apps Script Web App URL publicly.</strong> In this architecture, that URL serves as the private connection credential allowing access to read and write your spreadsheet.</li>
+              <li><strong>Never share your Google Sheet URL or ID publicly.</strong> Keep your spreadsheet private within your Google Drive.</li>
+              <li><strong>Never paste personal passwords or sensitive credentials</strong> into generic script templates or notes fields.</li>
+              <li><strong>Client-Side Code Visibility:</strong> The frontend application is open, client-side code running in your web browser. True security comes from your Google account's permissions boundary and keeping your deployment URL private—never from attempting to obscure client-side JavaScript.</li>
+              <li><strong>Realistic Privacy:</strong> We do not make absolute, exaggerated claims such as <em>"Your data can never be stolen."</em> Security is a shared responsibility between your device security, your Google account security (e.g., 2FA), and keeping your Web App URL confidential.</li>
+            </ul>
+          </div>
+        </section>
+
+        <!-- ============================================================
+             9. Updating Apps Script
+             ============================================================ -->
+        <section id="help-updating-script" class="help-section">
+          <span class="help-badge">Maintenance</span>
+          <h2>Updating Google Apps Script</h2>
+          <p class="help-section-desc">
+            When a new version of PivotMe is released with backend improvements, follow this 9-step update process without losing your historical records.
+          </p>
+
+          <div class="help-step-timeline">
+            <div class="help-step-item">
+              <div class="help-step-badge">1</div>
+              <div class="help-step-content">
+                <h3>Read the Release Note</h3>
+                <p>Check the release notes to see what was improved or added in the updated backend script.</p>
+              </div>
+            </div>
+
+            <div class="help-step-item">
+              <div class="help-step-badge">2</div>
+              <div class="help-step-content">
+                <h3>Open Existing Apps Script</h3>
+                <p>Open the Google Sheet connected to your PivotMe app and click <strong>Extensions</strong> → <strong>Apps Script</strong>. <em>Do not create a new sheet!</em></p>
+              </div>
+            </div>
+
+            <div class="help-step-item">
+              <div class="help-step-badge">3</div>
+              <div class="help-step-content">
+                <h3>Back Up Your Sheet (Optional)</h3>
+                <p>Inside Google Sheets, click <strong>File</strong> → <strong>Make a copy</strong> if you want a local backup before updating.</p>
+              </div>
+            </div>
+
+            <div class="help-step-item">
+              <div class="help-step-badge">4</div>
+              <div class="help-step-content">
+                <h3>Replace Script Code</h3>
+                <p>Select all code in <code>Code.gs</code>, replace it with the new version of <code>appscript.gs</code> from the Setup section above.</p>
+              </div>
+            </div>
+
+            <div class="help-step-item">
+              <div class="help-step-badge">5</div>
+              <div class="help-step-content">
+                <h3>Save the Project</h3>
+                <p>Press <strong>Ctrl + S</strong> (or <strong>Cmd + S</strong>) to save your updated code.</p>
+              </div>
+            </div>
+
+            <div class="help-step-item">
+              <div class="help-step-badge">6</div>
+              <div class="help-step-content">
+                <h3>Deploy New Version</h3>
+                <p>Click <strong>Deploy</strong> → <strong>Manage deployments</strong> → click the pencil (Edit) icon → under Version select <strong>New version</strong> → click <strong>Deploy</strong>.</p>
+              </div>
+            </div>
+
+            <div class="help-step-item">
+              <div class="help-step-badge">7</div>
+              <div class="help-step-content">
+                <h3>Keep Your Existing Spreadsheet</h3>
+                <p>PivotMe's backend script automatically detects missing columns or new tabs and adds them on first sync. Your existing habit logs and task data are preserved intact.</p>
+              </div>
+            </div>
+
+            <div class="help-step-item">
+              <div class="help-step-badge">8</div>
+              <div class="help-step-content">
+                <h3>Return to PivotMe Settings</h3>
+                <p>If your Web App URL remained the same, no URL change is needed. If a new deployment URL was generated, paste it into Settings.</p>
+              </div>
+            </div>
+
+            <div class="help-step-item">
+              <div class="help-step-badge">9</div>
+              <div class="help-step-content">
+                <h3>Test Connection</h3>
+                <p>Use the Test Connection tool in the Setup section to verify that your updated deployment is responding with <code>status: ok</code>.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="help-tip-box" style="margin-top: 16px;">
+            <strong>When is Data Migration Actually Required?</strong>
+            <p style="margin: 4px 0 0 0; font-size: 0.82rem; line-height: 1.45;">
+              <strong>You do NOT need to create a new spreadsheet for updates.</strong> The script is written to be backward-compatible: it inspects your existing columns and appends any newly introduced headers without touching your data rows. Manual migration is only required in the rare event of a major structural schema redesign, which will be clearly flagged in the release notes.
+            </p>
+          </div>
+        </section>
+
+        <!-- ============================================================
+             10. App Updates vs. Apps Script Updates
+             ============================================================ -->
+        <section id="help-app-updates" class="help-section">
+          <span class="help-badge">Architecture</span>
+          <h2>App Updates vs. Apps Script Updates</h2>
+          <p class="help-section-desc">
+            To maintain your application confidently, understand the distinction between frontend application updates and backend script updates.
+          </p>
+
+          <div class="help-compare-grid" style="margin-top: 14px;">
+            <div class="help-compare-card" style="background: var(--bg-secondary);">
+              <h3 style="font-size: 0.92rem; font-weight: 700; color: var(--accent); margin: 0 0 6px 0;">Updating PivotMe (Frontend)</h3>
+              <ul class="help-compare-list">
+                <li>Updates HTML, CSS, and client-side JavaScript files.</li>
+                <li>Managed automatically by your browser via the Service Worker cache whenever you load the app online.</li>
+                <li><strong>Does not erase</strong> your local IndexedDB database.</li>
+                <li><strong>Does not alter</strong> your Google Sheet structure.</li>
+              </ul>
+            </div>
+
+            <div class="help-compare-card" style="background: var(--bg-secondary);">
+              <h3 style="font-size: 0.92rem; font-weight: 700; color: var(--success); margin: 0 0 6px 0;">Updating Apps Script (Backend)</h3>
+              <ul class="help-compare-list">
+                <li>Changes server-side logic inside your Google account.</li>
+                <li>Requires manually pasting the updated code and creating a <em>New Version</em> deployment in Apps Script.</li>
+                <li>Handles how data is written to and read from your Google Sheet tabs.</li>
+                <li>Maintains your existing spreadsheet records across versions.</li>
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        <!-- ============================================================
+             11. Moving Hosting
+             ============================================================ -->
+        <section id="help-hosting" class="help-section">
+          <span class="help-badge">Hosting Migration</span>
+          <h2>Moving PivotMe to Another Host</h2>
+          <p class="help-section-desc">
+            Because PivotMe uses a decoupled, static architecture, moving where the frontend is hosted is straightforward and safe.
+          </p>
+
+          <div class="help-status-grid" style="grid-template-columns: 1fr 1fr; margin-top: 14px;">
+            <div class="help-status-card">
+              <strong style="font-size: 0.85rem; color: var(--accent);">Frontend Hosting Layer</strong>
+              <p class="help-status-desc" style="margin-top: 4px;">Static files hosted on GitHub Pages, Cloudflare Pages, Vercel, or a private local server.</p>
+            </div>
+            <div class="help-status-card">
+              <strong style="font-size: 0.85rem; color: var(--success);">User Data Layer</strong>
+              <p class="help-status-desc" style="margin-top: 4px;">Local IndexedDB + your private Google Apps Script Web App + your Google Sheet.</p>
+            </div>
+          </div>
+
+          <div class="help-tip-box" style="margin-top: 16px;">
+            <strong>What Happens When You Move Hosts?</strong>
+            <ul style="margin: 6px 0 0 0; padding-left: 18px; font-size: 0.82rem; line-height: 1.5;">
+              <li><strong>Your Google Sheet and Apps Script do not change.</strong> They remain untouched in your Google Drive.</li>
+              <li><strong>IndexedDB is origin-isolated:</strong> Browsers isolate IndexedDB by domain. When you open PivotMe on a new host domain, the browser starts with a blank local database.</li>
+              <li><strong>How to populate the new host:</strong> Simply open Settings on the new host, paste your existing Google Apps Script Web App URL, and tap <strong>Restore from Sheet</strong> in Settings. All your habits, tasks, logs, reflections, and plans will immediately download to your new device/host!</li>
+            </ul>
+          </div>
+        </section>
+
+        <!-- ============================================================
+             12. Troubleshooting
+             ============================================================ -->
+        <section id="help-troubleshooting" class="help-section">
+          <span class="help-badge">Troubleshooting</span>
+          <h2>Troubleshooting Common Issues</h2>
+          <p class="help-section-desc">
+            Quick, practical diagnostic steps for common connection or sync scenarios.
+          </p>
+
+          <div class="trouble-card">
+            <div class="trouble-issue">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--danger);"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+              Connection Failed / Sync Indicator Red
+            </div>
+            <div class="trouble-solution">
+              <ol>
+                <li>Use the <strong>Test Connection</strong> tool in the Setup section to check the exact error response.</li>
+                <li>Check your Web App URL: it must end in <code>/exec</code> (not <code>/edit</code>).</li>
+                <li>In Google Apps Script, click <strong>Deploy</strong> → <strong>Manage deployments</strong>. Ensure <em>Who has access</em> is set to <strong>Anyone</strong> (if set to "Only myself", browser fetch calls will fail).</li>
+                <li>Verify your device has an active internet connection.</li>
+              </ol>
+            </div>
+          </div>
+
+          <div class="trouble-card">
+            <div class="trouble-issue">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--warning);"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 14 14"/></svg>
+              Data Not Appearing in Google Sheet
+            </div>
+            <div class="trouble-solution">
+              <ol>
+                <li>Check the header sync indicator. If it shows yellow (syncing) or red (offline), wait until your connection resumes.</li>
+                <li>Remember: changes are saved to your local IndexedDB immediately and queued for background upload.</li>
+                <li>Ensure the Web App URL in your Settings corresponds to the Google Sheet you are currently inspecting.</li>
+                <li>Refresh the spreadsheet in your browser.</li>
+              </ol>
+            </div>
+          </div>
+
+          <div class="trouble-card">
+            <div class="trouble-issue">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--accent);"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+              Changed Browser, Device, or Incognito Window
+            </div>
+            <div class="trouble-solution">
+              <ol>
+                <li>IndexedDB is local to the specific browser and device. A new browser or device will start empty by design.</li>
+                <li>Open Settings in the new browser, paste your Web App URL, and tap <strong>Restore from Sheet</strong> to download your cloud records.</li>
+              </ol>
+            </div>
+          </div>
+
+          <div class="trouble-card">
+            <div class="trouble-issue">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--success);"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+              Updated Apps Script But Still Showing Old Behavior
+            </div>
+            <div class="trouble-solution">
+              <ol>
+                <li>In Google Apps Script editor, you must click <strong>Deploy</strong> → <strong>Manage deployments</strong> → Edit → select <strong>New version</strong> from the dropdown → click <strong>Deploy</strong>.</li>
+                <li>Simply pressing Save in the code editor does not update the active Web App deployment. You must create a new version deployment!</li>
+              </ol>
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </div>
+  </main>
+
+  <!-- ====== Navigation (Sidebar on desktop, bottom bar on mobile) ====== -->
+  <nav class="bottom-nav">
+    <div class="nav-brand">
+      <div class="nav-brand-icon">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M5 21V8a4 4 0 0 1 4-4h6"/>
+          <polyline points="13 1.5 19 6 13 10.5"/>
+          <line x1="5" y1="13.5" x2="14" y2="13.5"/>
+        </svg>
+      </div>
+      <div class="nav-brand-info">
+        <span class="nav-brand-title">PivotMe</span>
+        <span class="nav-brand-sub">Daily Execution</span>
+      </div>
+    </div>
+    <div class="nav-inner">
+      <a href="index.html" class="nav-item" aria-label="Habits">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/>
+          <path d="m9 12 2 2 4-4"/>
+        </svg>
+        <span>Habits</span>
+      </a>
+      <a href="tasks.html" class="nav-item" aria-label="Tasks">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="4" y="3" width="16" height="18" rx="2"/>
+          <path d="M10 7h4M8 12h8M8 16h5"/>
+        </svg>
+        <span>Tasks</span>
+      </a>
+      <a href="plan.html" class="nav-item" aria-label="Plan">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+          <line x1="16" y1="2" x2="16" y2="6"/>
+          <line x1="8" y1="2" x2="8" y2="6"/>
+          <line x1="3" y1="10" x2="21" y2="10"/>
+        </svg>
+        <span>Plan</span>
+      </a>
+      <a href="reflection.html" class="nav-item" aria-label="Reflect">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="5"/>
+          <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+        </svg>
+        <span>Reflect</span>
+      </a>
+      <a href="help.html" class="nav-item active" aria-label="Help">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/>
+          <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+          <line x1="12" y1="17" x2="12.01" y2="17"/>
+        </svg>
+        <span>Help</span>
+      </a>
+    </div>
+  </nav>
+
+  <!-- ====== Scripts ====== -->
+  <script src="db.js"></script>
+  <script src="sync.js"></script>
+  <script src="script.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // 1. Settings modal shortcut
+      const shortcutBtn = document.getElementById('open-settings-shortcut');
+      if (shortcutBtn) {
+        shortcutBtn.addEventListener('click', () => {
+          const settingsBtn = document.getElementById('settings-btn');
+          if (settingsBtn) settingsBtn.click();
+        });
+      }
+
+      // 2. Pre-fill Test Connection input from saved settings if available
+      const testConnInput = document.getElementById('test-conn-url');
+      if (testConnInput && typeof API_URL !== 'undefined' && API_URL) {
+        testConnInput.value = API_URL;
+      }
+
+      // 3. Test Connection Widget
+      const testConnBtn = document.getElementById('test-conn-btn');
+      const testConnResult = document.getElementById('test-conn-result');
+
+      if (testConnBtn && testConnInput && testConnResult) {
+        testConnBtn.addEventListener('click', async () => {
+          const url = testConnInput.value.trim() || (typeof API_URL !== 'undefined' ? API_URL : '');
+          if (!url) {
+            testConnResult.className = 'test-conn-result error';
+            testConnResult.textContent = 'Please enter or save your Google Apps Script Web App URL first.';
+            return;
+          }
+
+          if (!url.startsWith('https://script.google.com/macros/s/')) {
+            testConnResult.className = 'test-conn-result error';
+            testConnResult.textContent = 'Invalid URL. The URL must begin with https://script.google.com/macros/s/... and end in /exec';
+            return;
+          }
+
+          testConnBtn.disabled = true;
+          testConnBtn.textContent = 'Testing...';
+          testConnResult.className = 'test-conn-result';
+          testConnResult.style.display = 'none';
+
+          try {
+            const separator = url.includes('?') ? '&' : '?';
+            const res = await fetch(`${url}${separator}action=ping`);
+            const data = await res.json();
+
+            if (data && data.status === 'ok') {
+              testConnResult.className = 'test-conn-result success';
+              testConnResult.textContent = `Success: ${data.message || 'Connected to Google Sheet successfully!'}`;
+            } else {
+              testConnResult.className = 'test-conn-result error';
+              testConnResult.textContent = `Error from Apps Script: ${data.error || JSON.stringify(data)}`;
+            }
+          } catch (err) {
+            testConnResult.className = 'test-conn-result error';
+            testConnResult.textContent = `Connection failed (${err.message}). Ensure deployment access is set to "Anyone" and your device has internet access.`;
+          } finally {
+            testConnBtn.disabled = false;
+            testConnBtn.textContent = 'Test Connection';
+          }
+        });
+      }
+
+      // 4. Copy Apps Script Code button
+      const copyBtn = document.getElementById('copy-script-btn');
+      const copyText = document.getElementById('copy-btn-text');
+      const codeArea = document.getElementById('apps-script-code');
+
+      if (copyBtn && codeArea) {
+        copyBtn.addEventListener('click', async () => {
+          try {
+            await navigator.clipboard.writeText(codeArea.value);
+            copyText.textContent = 'Copied!';
+            copyBtn.classList.add('copied');
+            setTimeout(() => {
+              copyText.textContent = 'Copy Code';
+              copyBtn.classList.remove('copied');
+            }, 2000);
+          } catch (err) {
+            codeArea.select();
+            document.execCommand('copy');
+            copyText.textContent = 'Copied!';
+            copyBtn.classList.add('copied');
+            setTimeout(() => {
+              copyText.textContent = 'Copy Code';
+              copyBtn.classList.remove('copied');
+            }, 2000);
+          }
+        });
+      }
+
+      // 5. Real-time Search Filter across Guide Sections
+      const searchInput = document.getElementById('help-search-input');
+      const sections = document.querySelectorAll('.help-section');
+
+      if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+          const query = e.target.value.trim().toLowerCase();
+          sections.forEach(sec => {
+            if (!query) {
+              sec.style.display = '';
+            } else {
+              const text = sec.textContent.toLowerCase();
+              sec.style.display = text.includes(query) ? '' : 'none';
+            }
+          });
+        });
+      }
+
+      // 6. Active Section Tracking for Desktop Sidebar and Mobile Pills
+      const sidebarLinks = document.querySelectorAll('.help-doc-link');
+      const mobilePills = document.querySelectorAll('.help-nav-pill');
+
+      if ('IntersectionObserver' in window) {
+        const observer = new IntersectionObserver((entries) => {
+          entries.forEach(entry => {
+            if (entry.isIntersecting) {
+              const id = entry.target.getAttribute('id');
+              sidebarLinks.forEach(link => {
+                link.classList.toggle('active', link.getAttribute('href') === `#${id}`);
+              });
+              mobilePills.forEach(pill => {
+                const isActive = pill.getAttribute('href') === `#${id}`;
+                pill.classList.toggle('active', isActive);
+                if (isActive) {
+                  pill.scrollIntoView({ behavior: 'smooth', inline: 'nearest', block: 'nearest' });
+                }
+              });
+            }
+          });
+        }, { rootMargin: '-20% 0px -70% 0px' });
+
+        sections.forEach(sec => observer.observe(sec));
+      }
+    });
+  </script>
+</body>
+</html>
